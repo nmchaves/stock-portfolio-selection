@@ -1,1 +1,3 @@
-# EE378_Code
+# Title Pending
+
+Team members: Nico Chaves, Dominic Delgado
