@@ -1,6 +1,7 @@
 import util
 from constants import init_dollars, cost_per_trans_per_dollar
 import numpy as np
+import matplotlib.pyplot as plt
 
 class ConstantRebalancedPortfolio(util.MarketData):
     def __init__(self, market_data):
@@ -10,7 +11,7 @@ class ConstantRebalancedPortfolio(util.MarketData):
         self.shares_holding = util.init_portfolio_uniform(self.data, self.dollars, cost_per_trans_per_dollar)
         self.shares_held_hist = np.empty([0, self.num_stocks])  # History of share holdings
         self.shares_held_hist = np.append(self.shares_held_hist, [self.shares_holding], axis=0)
-        self.num_days = self.data.vol.shape[1]
+        self.num_days = self.data.vol.shape[0]
         self.dollars_hist = [1]
 
 
@@ -45,6 +46,9 @@ class ConstantRebalancedPortfolio(util.MarketData):
         num_stocks_to_invest_in = np.count_nonzero(new_allocation)
         close_prices = self.data.cl[cur_day, :]
         total_dollars = util.dollars_in_stocks(self.shares_holding, close_prices)
+        #if cur_day > 10:
+        #    print 'cur day: ', cur_day, ' total dollars: ', total_dollars
+        self.dollars_hist.append(total_dollars)
         dist_from_uniform = util.dollars_away_from_uniform(self.shares_holding, close_prices, 1.0*total_dollars/num_stocks_to_invest_in)
         total_trans_costs = dist_from_uniform * cost_per_trans_per_dollar
         rebalanced_dollars = 1.0 * (total_dollars - total_trans_costs)/ num_stocks_to_invest_in
@@ -57,7 +61,7 @@ class ConstantRebalancedPortfolio(util.MarketData):
         return new_share_holdings
 
     def run(self):
-        for day in range(2, self.num_days+1):
+        for day in range(1, self.num_days):
             self.shares_holding = self.reinvest(day, self.get_new_allocation(day))
             self.shares_held_hist = np.append(self.shares_held_hist, [self.shares_holding], axis=0)
 
@@ -71,3 +75,12 @@ class ConstantRebalancedPortfolio(util.MarketData):
         print 'Total dollar value of assets:'
         print util.dollars_in_stocks(self.shares_holding, self.data.cl[-1, :])
         print 'Sharpe ratio: TODO'
+
+        output_fname = 'results/const_rebalancing_dollars_over_time.txt'
+        print 'Saving dollar value to file: ', output_fname
+        output_file = open(output_fname, 'w')
+        output_file.write('\t'.join(map(str, self.dollars_hist)))
+
+        #plt.plot(self.dollars_hist)
+        #plt.show()
+

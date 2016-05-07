@@ -94,3 +94,18 @@ def dollars_away_from_uniform(shares_holding, share_prices, dollars_per_stock):
 
     return distance
 
+
+def get_float_array_from_file(path):
+    """
+    This function takes a path to a file containing a tab-delimited
+    text file and converts that file into an array.
+
+    :param path: Path to the file
+    :return: The array
+    """
+    f = open(path)
+    for line in f:
+        return map(float, line.split('\t'))
+        break
+
+

@@ -5,10 +5,8 @@
 
 '''
 
-import numpy as np
 import util
 from const_rebalancing_portfolio import ConstantRebalancedPortfolio
-
 
 """
 *********************
@@ -27,3 +25,4 @@ if __name__ == "__main__":
 
     const_portfolio = ConstantRebalancedPortfolio(market_data=train_data)
     const_portfolio.run()
+
