@@ -7,7 +7,7 @@
 
 import numpy as np
 import util
-from uniform_portfolio import ConstantRebalancedPortfolio
+from const_rebalancing_portfolio import ConstantRebalancedPortfolio
 
 
 """
@@ -17,7 +17,7 @@ from uniform_portfolio import ConstantRebalancedPortfolio
 """
 if __name__ == "__main__":
 
-    # Load the training data
+    # Load the training data from MATLAB file
     train_data = util.load_matlab_data('portfolio.mat')
 
     num_stocks = len(train_data.stock_names)  # Number of stocks in the dataset
