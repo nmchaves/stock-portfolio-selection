@@ -6,7 +6,8 @@
 '''
 
 import util
-from const_rebalancing_portfolio import ConstantRebalancedPortfolio
+from const_rebalancing_portfolio import UniformConstantRebalancedPortfolio
+from uniform_buy_and_hold import UniformBuyAndHoldPortfolio
 
 """
 *********************
@@ -23,6 +24,9 @@ if __name__ == "__main__":
     print 'Number of stocks in training set: ', num_stocks
     print 'Number of days in training set: ', num_train_days
 
-    const_portfolio = ConstantRebalancedPortfolio(market_data=train_data)
+    const_portfolio = UniformConstantRebalancedPortfolio(market_data=train_data)
     const_portfolio.run()
+
+    ubah_portfolio = UniformBuyAndHoldPortfolio(market_data=train_data)
+    ubah_portfolio.run()
 

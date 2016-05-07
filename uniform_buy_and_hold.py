@@ -1,18 +1,10 @@
-"""
-    This file contains the unifrom constant rebalancing portfolio
-    class, which inherits from the Portfolio class.
-
-    The uniform constant rebalancing approach was implemented as a baseline
-    to compare with more sophisticated methods.
-"""
 
 import util
 from constants import init_dollars, cost_per_trans_per_dollar
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-class UniformConstantRebalancedPortfolio(util.Portfolio):
+class UniformBuyAndHoldPortfolio(util.Portfolio):
 
     def get_new_allocation(self, cur_day):
         """
@@ -21,13 +13,7 @@ class UniformConstantRebalancedPortfolio(util.Portfolio):
         :return: A (1 x num_stocks) array of fractions. Each fraction represents the
         amount of the money should be invested in that stock at the end of the day.
         """
-        stocks_avail = util.get_avail_stocks(self.data.op[cur_day,:])
-        num_stocks_avail = len(stocks_avail.keys())
-        new_allocation = np.zeros(self.num_stocks)
-        for stock in stocks_avail.keys():
-            new_allocation[stock] = 1.0 / num_stocks_avail
-
-        return new_allocation
+        return self.allocation
 
     def update_portfolio(self, cur_day, new_allocation):
         """
@@ -43,19 +29,13 @@ class UniformConstantRebalancedPortfolio(util.Portfolio):
         #print 'Reinvesting into a uniform portfolio for day: ', cur_day
 
         num_stocks_to_invest_in = np.count_nonzero(new_allocation)
-        close_prices = self.data.cl[cur_day, :]
+        close_prices = np.nan_to_num(self.data.cl[cur_day, :])
         total_dollars = util.dollars_in_stocks(self.shares_holding, close_prices)
-
         self.dollars_hist.append(total_dollars)
-        dist_from_uniform = util.dollars_away_from_uniform(self.shares_holding, close_prices, 1.0*total_dollars/num_stocks_to_invest_in)
-        total_trans_costs = dist_from_uniform * cost_per_trans_per_dollar
-        rebalanced_dollars = 1.0 * (total_dollars - total_trans_costs)/ num_stocks_to_invest_in
 
-        stocks_avail = util.get_avail_stocks(self.data.op[cur_day,:])
-        new_share_holdings = np.zeros(self.num_stocks)
-        for idx in stocks_avail.keys():
-            new_share_holdings[idx] = 1.0 * rebalanced_dollars / close_prices[idx]
-
+        prev_close_prices = np.nan_to_num(self.data.cl[cur_day-1, :])
+        rel_change = np.nan_to_num(np.divide(close_prices, prev_close_prices))
+        new_share_holdings = np.multiply(self.shares_holding, rel_change)
         return new_share_holdings
 
     def run(self):
@@ -64,11 +44,11 @@ class UniformConstantRebalancedPortfolio(util.Portfolio):
             self.shares_held_hist = np.append(self.shares_held_hist, [self.shares_holding], axis=0)
 
         self.print_results()
-        #self.save_results()
+        self.save_results()
 
     def print_results(self):
         print 30 * '-'
-        print 'Performance for uniform constant rebalancing portfolio:'
+        print 'Performance for uniform buy and hold strategy:'
         print 30 * '-'
         #print self.shares_holding
         print 'Total dollar value of assets:'
@@ -78,10 +58,7 @@ class UniformConstantRebalancedPortfolio(util.Portfolio):
         #plt.show()
 
     def save_results(self):
-        output_fname = 'results/const_rebalancing_dollars_over_time.txt'
+        output_fname = 'results/uniform_buy_and_hold_dollars_over_time.txt'
         print 'Saving dollar value to file: ', output_fname
         output_file = open(output_fname, 'w')
         output_file.write('\t'.join(map(str, self.dollars_hist)))
-
-
-

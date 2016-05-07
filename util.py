@@ -1,10 +1,25 @@
-'''
+"""
     Utilities file
-'''
+"""
 import numpy as np
 from scipy import io
 from math import isnan
-import constants
+from constants import init_dollars, cost_per_trans_per_dollar
+
+
+class Portfolio():
+    def __init__(self, market_data):
+        self.data = market_data
+        self.num_stocks = self.data.vol.shape[1]  # Total number of stocks in dataset (not all are available initially)
+        self.dollars = init_dollars
+        self.allocation, self.shares_holding = init_portfolio_uniform(self.data, self.dollars, cost_per_trans_per_dollar)
+        self.shares_held_hist = np.empty([0, self.num_stocks])  # History of share holdings
+        self.shares_held_hist = np.append(self.shares_held_hist, [self.shares_holding], axis=0)
+        self.num_days = self.data.vol.shape[0]
+        self.dollars_hist = [1]
+
+    def update_portfolio(self, cur_day, new_allocation):
+        raise('update_portfolio is an abstract method, so it must be implemented by the child class!')
 
 
 class MarketData():
@@ -37,7 +52,8 @@ def init_portfolio_uniform(data, dollars, cost_per_trans_per_dollar):
     :param data: MarketData object containing the data for
     detemrining how to allocate the portfolio
 
-    :returns List of amount of shares allocated to each stock
+    :returns A list of the allocation (fraction of |dollars| given to each stock) and
+    a list of amount of shares allocated to each stock
     """
 
     available_stocks = get_avail_stocks(data.op[0, :])
@@ -45,16 +61,20 @@ def init_portfolio_uniform(data, dollars, cost_per_trans_per_dollar):
 
     total_trans_cost = dollars * cost_per_trans_per_dollar
     dollars_per_stock = 1.0 * (dollars - total_trans_cost) / num_stocks_avail
+    allocation_per_stock = 1.0 * dollars_per_stock / init_dollars
 
     print 'Num stocks available at day 1: ', num_stocks_avail
     print 'Dollars allocated to each stock at day 1: ', dollars_per_stock
 
     # Allocate an equal amount of money to each stock
-    init_shares = [0] * len(data.stock_names) #np.zeros(len(data.stock_names))
+    num_stocks_total = len(data.stock_names)
+    init_allocation = [0] * num_stocks_total
+    init_shares = [0] * num_stocks_total
     for index in available_stocks.keys():
+        init_allocation[index] = allocation_per_stock
         init_shares[index] = 1.0 * dollars_per_stock / data.cl[0,index]
 
-    return init_shares
+    return init_allocation, init_shares
 
 
 def get_avail_stocks(op_prices):
