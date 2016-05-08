@@ -7,7 +7,7 @@ from math import isnan
 from constants import init_dollars, cost_per_trans_per_dollar
 
 
-class Portfolio():
+class Portfolio(object):
     def __init__(self, market_data):
         self.data = market_data
         self.num_stocks = self.data.vol.shape[1]  # Total number of stocks in dataset (not all are available initially)

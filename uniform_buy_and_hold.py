@@ -44,7 +44,7 @@ class UniformBuyAndHoldPortfolio(util.Portfolio):
             self.shares_held_hist = np.append(self.shares_held_hist, [self.shares_holding], axis=0)
 
         self.print_results()
-        self.save_results()
+        #self.save_results()
 
     def print_results(self):
         print 30 * '-'

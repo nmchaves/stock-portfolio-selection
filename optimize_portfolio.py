@@ -8,6 +8,7 @@
 import util
 from const_rebalancing_portfolio import UniformConstantRebalancedPortfolio
 from uniform_buy_and_hold import UniformBuyAndHoldPortfolio
+from semi_const_rebalancing_portfolio import UniformSemiConstantRebalancedPortfolio
 
 """
 *********************
@@ -29,4 +30,9 @@ if __name__ == "__main__":
 
     ubah_portfolio = UniformBuyAndHoldPortfolio(market_data=train_data)
     ubah_portfolio.run()
+
+    semi_CRB_portfolio = UniformSemiConstantRebalancedPortfolio(market_data=train_data, interval=2)
+    semi_CRB_portfolio.run()
+
+    # TODO: best constant rebalancing portfolio (in hindshight)
 
