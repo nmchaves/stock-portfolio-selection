@@ -3,37 +3,18 @@
 """
 import numpy as np
 from scipy import io
-from math import isnan
-from constants import init_dollars, cost_per_trans_per_dollar
+from math import isnan, sqrt
+import market_data
 
 
-class Portfolio(object):
-    def __init__(self, market_data):
-        self.data = market_data
-        self.num_stocks = self.data.vol.shape[1]  # Total number of stocks in dataset (not all are available initially)
-        self.dollars = init_dollars
-        self.allocation, self.shares_holding = init_portfolio_uniform(self.data, self.dollars, cost_per_trans_per_dollar)
-        self.shares_held_hist = np.empty([0, self.num_stocks])  # History of share holdings
-        self.shares_held_hist = np.append(self.shares_held_hist, [self.shares_holding], axis=0)
-        self.num_days = self.data.vol.shape[0]
-        self.dollars_hist = [1]
+def load_matlab_sp500_data(file_path):
+    """
+    Get raw stock market data from Matlab file in |file_path|
 
-    def update_portfolio(self, cur_day, new_allocation):
-        raise('update_portfolio is an abstract method, so it must be implemented by the child class!')
-
-
-class MarketData():
-    def __init__(self, vol, op, lo, hi, cl, stocks):
-        self.vol = vol
-        self.op = op
-        self.lo = lo
-        self.hi = hi
-        self.cl = cl
-        self.stock_names = stocks
-
-def load_matlab_data(file_path):
-
-    mat = io.loadmat('portfolio.mat')
+    :param file_path: Path to the data file (must be a .mat file)
+    :return: MarketData object containing stock market data.
+    """
+    mat = io.loadmat(file_path)
     train_vol = np.array(mat['train_vol'])  # Volume for each stocks on each day
     train_op = np.array(mat['train_op'])
     train_lo = np.array(mat['train_lo'])
@@ -41,50 +22,58 @@ def load_matlab_data(file_path):
     train_cl = np.array(mat['train_cl'])
     train_stocks = [name[0] for name in np.array(mat['train_stocks'])[0]]  # Ticker names for all 497 stocks
 
-    return MarketData(train_vol, train_op, train_lo, train_hi, train_cl, train_stocks)
+    return market_data.MarketData(train_vol, train_op, train_lo, train_hi, train_cl, train_stocks)
 
 
-def init_portfolio_uniform(data, dollars, cost_per_trans_per_dollar):
+def get_price_relatives(raw_prices):
     """
-    This function initializes the share holdings by naively investing equal
-    amounts of money into each stock.
+    Converts raw stock market prices to relative price changes.
+    Sets the day 1 price relatives to be 0 by default. # TODO: change this when working with test set!!
 
-    :param data: MarketData object containing the data for
-    detemrining how to allocate the portfolio
-
-    :returns A list of the allocation (fraction of |dollars| given to each stock) and
-    a list of amount of shares allocated to each stock
+    :param raw_prices: (NUM_DAYS x NUM_STOCKS) Array of raw stock market prices
+    :return: Array of relative price changes
     """
-
-    available_stocks = get_avail_stocks(data.op[0, :])
-    num_stocks_avail = len(available_stocks.keys())
-
-    total_trans_cost = dollars * cost_per_trans_per_dollar
-    dollars_per_stock = 1.0 * (dollars - total_trans_cost) / num_stocks_avail
-    allocation_per_stock = 1.0 * dollars_per_stock / init_dollars
-
-    print 'Num stocks available at day 1: ', num_stocks_avail
-    print 'Dollars allocated to each stock at day 1: ', dollars_per_stock
-
-    # Allocate an equal amount of money to each stock
-    num_stocks_total = len(data.stock_names)
-    init_allocation = [0] * num_stocks_total
-    init_shares = [0] * num_stocks_total
-    for index in available_stocks.keys():
-        init_allocation[index] = allocation_per_stock
-        init_shares[index] = 1.0 * dollars_per_stock / data.cl[0,index]
-
-    return init_allocation, init_shares
+    price_relatives = np.zeros(raw_prices.shape)
+    prev_row = raw_prices[0]
+    for (i, row) in enumerate(raw_prices[1:]):
+        for (j, price) in enumerate(row):
+            prev_price = prev_row[j]
+            if price != 0 and prev_price != 0:
+                # TODO: check for edge cases
+                price_relatives[i+1, j] = 1.0 * price / prev_price
+        prev_row = row
+    return price_relatives
 
 
 def get_avail_stocks(op_prices):
-    avail_stocks = {}
+    """
+    Based on the opening prices for a given day, get the set of stocks that one can
+    actually purchase today (not all stocks are on the market at all times)
+
+    :param op_prices: The list of opening prices (this is NOT the relative prices! if you
+    use the relative prices, then you may miss the 1st day that a stock is available b/c
+    the relative price won't be defined)
+    :return: Binary array of available stocks (1 means available, 0 means unavailable
+    """
+    avail_stocks = [0] * len(op_prices)
     for i, price in enumerate(op_prices):
         # If price is a valid number, then we can purchase the
         # stock at the end of the day
         if not isnan(price):
-            avail_stocks[i] = True
+            avail_stocks[i] = 1
     return avail_stocks
+
+
+def get_uniform_allocation(num_stocks, op_prices):
+    b = np.zeros(num_stocks)
+    available_stocks = get_avail_stocks(op_prices)
+    num_stocks_avail = np.count_nonzero(available_stocks)
+    frac = 1.0 / num_stocks_avail  # fractional allocation per stock
+
+    for (i, is_avail) in enumerate(available_stocks):
+        if is_avail:
+            b[i] = frac
+    return b
 
 
 def dollars_in_stocks(shares_holding, share_prices):
@@ -129,3 +118,22 @@ def get_float_array_from_file(path):
         break
 
 
+def emprical_sharpe_ratio(dollars):
+    """
+    Compute the empirical Sharpe Ratio:
+        x_bar = (final_dollars - init_dollars) / num_days
+        var = sqrt( (1/num_days) * (sum(x_i-mean(x_bar)))^2 )
+        Sharpe ratio = mean(x) * sqrt(num_days) / var
+
+    :param dollars: # of dollars held at the end of each day over time.
+    :return: Sharpe ratio
+    """
+
+    # TODO: fix this, e.g. determine if dollars[0]=1 or 0.9995 and fix variance computation
+    num_days = len(dollars)
+    x = [dollars[i] - dollars[i-1] for i in range(1, num_days)]
+    print 'x: '
+    print x
+    x_bar = 1.0 * (dollars[-1] - dollars[0]) / num_days
+    #var = sqrt((1.0/num_days) * )
+    #return 1.0 * x_bar * sqrt(num_days) / var
