@@ -118,7 +118,7 @@ def get_float_array_from_file(path):
         break
 
 
-def emprical_sharpe_ratio(dollars):
+def empirical_sharpe_ratio(dollars):
     """
     Compute the empirical Sharpe Ratio:
         x_bar = (final_dollars - init_dollars) / num_days
@@ -129,11 +129,25 @@ def emprical_sharpe_ratio(dollars):
     :return: Sharpe ratio
     """
 
-    # TODO: fix this, e.g. determine if dollars[0]=1 or 0.9995 and fix variance computation
+    # TODO: check this, e.g. determine if dollars[0]=1 or 0.9995 and fix variance computation
     num_days = len(dollars)
     x = [dollars[i] - dollars[i-1] for i in range(1, num_days)]
     print 'x: '
     print x
-    x_bar = 1.0 * (dollars[-1] - dollars[0]) / num_days
-    #var = sqrt((1.0/num_days) * )
-    #return 1.0 * x_bar * sqrt(num_days) / var
+    #x_bar = 1.0 * (dollars[-1] - dollars[0]) / num_days
+    #s = sum([(x_i - x_bar)**2 for x_i in x])
+    #var = sqrt((1.0/num_days) * s)
+    x_bar = np.mean(x)
+    std_dev = np.std(x)
+    return (1.0 * x_bar / std_dev) * sqrt(255)  # 255 is # of trading days in 1 year
+
+
+def predict_prices(cur_day, market_data):
+    """
+        Predict closing prices at the end of |cur_day|
+    """
+    # TODO: use autoregressive or some other ML approach to estimate price relatives at the end of the day
+    #est_prs = []  # estimated price relatives
+    # Simplest baseline: Assume prices remain the same as open
+    est_prs = np.nan_to_num(market_data.get_op(relative=True)[cur_day, :])
+    return est_prs
