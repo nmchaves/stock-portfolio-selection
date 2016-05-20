@@ -4,11 +4,12 @@
 """
 
 import numpy as np
+import util
 from util import get_uniform_allocation, empirical_sharpe_ratio
 from constants import init_dollars, cost_per_dollar
 from market_data import MarketData
 
-
+# TODO: printing results
 class Portfolio(object):
     def __init__(self, market_data):
         if not isinstance(market_data, MarketData):
@@ -74,13 +75,23 @@ class Portfolio(object):
         :return: The new # of dollars held
         """
 
+        if cpr is None:
+            cpr = self.data.get_cl(relative=True)[cur_day, :]  # closing price relatives
+        if cur_b is None:
+            cur_b = self.b
+        if prev_b is None and cur_day > 0:
+            prev_b = self.b_history[cur_day-1]
+
+        return util.get_dollars(cur_day, self.dollars, prev_b, cur_b, cpr)
+
+        """
         if cur_day == 0:
             # Only buy stocks on day 0 (no selling)
             trans_costs = self.dollars * cost_per_dollar
             return self.dollars - trans_costs
 
         if cpr is None:
-            cpr = np.nan_to_num(self.data.get_cl(relative=True)[cur_day, :])  # closing price relatives
+            cpr = self.data.get_cl(relative=True)[cur_day, :]  # closing price relatives
         if cur_b is None:
             cur_b = self.b
         if prev_b is None:
@@ -102,6 +113,7 @@ class Portfolio(object):
             exit(0)
         else:
             return new_dollars
+        """
 
     def predict_performance(self, cur_day, est_cl):
         """

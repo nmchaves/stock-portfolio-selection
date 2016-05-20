@@ -3,23 +3,25 @@
 """
 import numpy as np
 from scipy import io
-from math import isnan, sqrt
+from math import sqrt
 import market_data
+from constants import cost_per_dollar
 
 
 def load_matlab_sp500_data(file_path):
     """
-    Get raw stock market data from Matlab file in |file_path|
+    Get raw stock market data from Matlab file in |file_path|.
+    Converts all nan values to 0.
 
     :param file_path: Path to the data file (must be a .mat file)
     :return: MarketData object containing stock market data.
     """
     mat = io.loadmat(file_path)
-    train_vol = np.array(mat['train_vol'])  # Volume for each stocks on each day
-    train_op = np.array(mat['train_op'])
-    train_lo = np.array(mat['train_lo'])
-    train_hi = np.array(mat['train_hi'])
-    train_cl = np.array(mat['train_cl'])
+    train_vol = np.nan_to_num(np.array(mat['train_vol']))  # Volume for each stocks on each day
+    train_op = np.nan_to_num(np.array(mat['train_op']))
+    train_lo = np.nan_to_num(np.array(mat['train_lo']))
+    train_hi = np.nan_to_num(np.array(mat['train_hi']))
+    train_cl = np.nan_to_num(np.array(mat['train_cl']))
     train_stocks = [name[0] for name in np.array(mat['train_stocks'])[0]]  # Ticker names for all 497 stocks
 
     return market_data.MarketData(train_vol, train_op, train_lo, train_hi, train_cl, train_stocks)
@@ -50,16 +52,15 @@ def get_avail_stocks(op_prices):
     Based on the opening prices for a given day, get the set of stocks that one can
     actually purchase today (not all stocks are on the market at all times)
 
-    :param op_prices: The list of opening prices (this is NOT the relative prices! if you
-    use the relative prices, then you may miss the 1st day that a stock is available b/c
-    the relative price won't be defined)
+    :param op_prices: The list of opening prices
     :return: Binary array of available stocks (1 means available, 0 means unavailable
     """
     avail_stocks = [0] * len(op_prices)
     for i, price in enumerate(op_prices):
         # If price is a valid number, then we can purchase the
         # stock at the end of the day
-        if not isnan(price):
+        #if not isnan(price):
+        if price > 0:
             avail_stocks[i] = 1
     return avail_stocks
 
@@ -83,7 +84,7 @@ def dollars_in_stocks(shares_holding, share_prices):
     # Return total amount of money held in stocks
     return np.dot(shares_holding, share_prices)
 
-
+'''
 def dollars_away_from_uniform(shares_holding, share_prices, dollars_per_stock):
     """
     This function determines how far the current portfolio is (in terms of dollars)
@@ -102,7 +103,7 @@ def dollars_away_from_uniform(shares_holding, share_prices, dollars_per_stock):
             distance += abs(share * price - dollars_per_stock)
 
     return distance
-
+'''
 
 def get_float_array_from_file(path):
     """
@@ -151,3 +152,38 @@ def predict_prices(cur_day, market_data):
     # Simplest baseline: Assume prices remain the same as open
     est_prs = np.nan_to_num(market_data.get_op(relative=True)[cur_day, :])
     return est_prs
+
+
+def get_dollars(cur_day, prev_dollars, prev_b, cur_b, cpr):
+        """
+        Calculate a portfolio's wealth for the end of |cur_day| after buying/selling stocks
+        at their closing prices.
+
+        :param cur_day: Current day (0-based s.t. cur_day=0 corresponds to the 1st day)
+        :param prev_dollars: # of dollars held in stocks after making trades at end of previous day
+        :param prev_b: Allocation at the end of |cur_day|-1.
+        :param cur_b: Allocation at the end of |cur_day|.
+        :param cpr: Closing price relatives for the end of |cur_day|.
+        :return: The new # of dollars held
+        """
+
+        if cur_day == 0:
+            # Only buy stocks on day 0 (no selling)
+            trans_costs = prev_dollars * cost_per_dollar
+            return prev_dollars - trans_costs
+
+        dollars_before_trading = prev_dollars * np.dot(prev_b, cpr)
+        if dollars_before_trading <= 0:
+            print 'The UCR portfolio ran out of money on day ', str(cur_day), '!'
+            exit(0)
+
+        L1_dist = np.linalg.norm((prev_b - cur_b), ord=1)  # L1 distance between new and old allocations
+        dollars_trading = dollars_before_trading * L1_dist  # # of dollars that need to be traded to...
+        # ...reallocate (this already includes costs of both buying and selling!)
+        new_dollars = dollars_before_trading - dollars_trading * cost_per_dollar
+
+        if new_dollars <= 0:
+            print 'The UCR portfolio ran out of money on day ', str(cur_day), '!'
+            exit(0)
+        else:
+            return new_dollars

@@ -1,7 +1,5 @@
 """
     Class to represent stock market data using price relatives.
-    The current literature tends to used relative price changes, so we
-    adopt this convention as well.
 """
 
 import util

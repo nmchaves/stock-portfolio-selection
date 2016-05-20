@@ -8,6 +8,7 @@
 """
 
 from ucrp import UniformConstantRebalancedPortfolio
+from ubah import UniformBuyAndHoldPortfolio
 from util import load_matlab_sp500_data
 from market_data import MarketData
 from expert_pool import ExpertPool
@@ -33,12 +34,17 @@ if __name__ == "__main__":
     print 'Number of stocks in training set: ', num_stocks
     print 'Number of days in training set: ', num_train_days
 
+
     ucrp = UniformConstantRebalancedPortfolio(market_data=train_data)
     ucrp.run()
 
+    ubah = UniformBuyAndHoldPortfolio(market_data=train_data)
+    ubah.run()
+
     # Expert Pooling
     ucrp2 = UniformConstantRebalancedPortfolio(market_data=train_data)
-    pool = ExpertPool(market_data=train_data, experts=[ucrp2])
+    ubah2 = UniformBuyAndHoldPortfolio(market_data=train_data)
+    pool = ExpertPool(market_data=train_data, experts=[ucrp2, ubah2])
     pool.run()
 
     '''
