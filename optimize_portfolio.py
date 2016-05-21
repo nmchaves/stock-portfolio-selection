@@ -12,11 +12,7 @@ from ubah import UniformBuyAndHoldPortfolio
 from util import load_matlab_sp500_data
 from market_data import MarketData
 from expert_pool import ExpertPool
-"""
-from uniform_buy_and_hold import UniformBuyAndHoldPortfolio
-from semi_const_rebalancing_portfolio import UniformSemiConstantRebalancedPortfolio
 from olmar import OLMAR
-"""
 
 
 """
@@ -34,7 +30,9 @@ if __name__ == "__main__":
     print 'Number of stocks in training set: ', num_stocks
     print 'Number of days in training set: ', num_train_days
 
-
+    olmar = OLMAR(market_data=train_data)
+    olmar.run()
+    """
     ucrp = UniformConstantRebalancedPortfolio(market_data=train_data)
     ucrp.run()
 
@@ -46,18 +44,7 @@ if __name__ == "__main__":
     ubah2 = UniformBuyAndHoldPortfolio(market_data=train_data)
     pool = ExpertPool(market_data=train_data, experts=[ucrp2, ubah2])
     pool.run()
-
-    '''
-
-    ubah_portfolio = UniformBuyAndHoldPortfolio(market_data=train_data)
-    ubah_portfolio.run()
-
-    #semi_CRB_portfolio = UniformSemiConstantRebalancedPortfolio(market_data=train_data, interval=4)
-    #semi_CRB_portfolio.run()
-
-    #olmar_portfolio = OLMAR(market_data=train_data, window=5, eps=10)
-    #olmar_portfolio.run()
-    '''
+    """
 
     # TODO: cross-validation for hyperparameters (e.g. window size)
 
@@ -69,5 +56,3 @@ if __name__ == "__main__":
     # for several days before moving in the other direction
     # todo: maybe anticor
 
-    # TODO: consider ensemble-based strategies to get combination of
-    # high-risk-high-reward strategies w/low-risk-low-reward strategies

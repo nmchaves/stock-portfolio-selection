@@ -84,37 +84,6 @@ class Portfolio(object):
 
         return util.get_dollars(cur_day, self.dollars, prev_b, cur_b, cpr)
 
-        """
-        if cur_day == 0:
-            # Only buy stocks on day 0 (no selling)
-            trans_costs = self.dollars * cost_per_dollar
-            return self.dollars - trans_costs
-
-        if cpr is None:
-            cpr = self.data.get_cl(relative=True)[cur_day, :]  # closing price relatives
-        if cur_b is None:
-            cur_b = self.b
-        if prev_b is None:
-            prev_b = self.b_history[cur_day-1]
-
-        prev_dollars = self.dollars  # amount of money after making trades at end of prev day
-        dollars_before_trading = prev_dollars * np.dot(prev_b, cpr)
-        if dollars_before_trading <= 0:
-            print 'The UCR portfolio ran out of money on day ', str(cur_day), '!'
-            exit(0)
-
-        L1_dist = np.linalg.norm((prev_b - cur_b), ord=1)  # L1 distance between new and old allocations
-        dollars_trading = dollars_before_trading * L1_dist  # # of dollars that need to be traded to
-                                        # reallocate (this already includes costs of both buying and selling!)
-        new_dollars = dollars_before_trading - dollars_trading * cost_per_dollar
-
-        if new_dollars <= 0:
-            print 'The UCR portfolio ran out of money on day ', str(cur_day), '!'
-            exit(0)
-        else:
-            return new_dollars
-        """
-
     def predict_performance(self, cur_day, est_cl):
         """
         Predict performance of this portfolio assuming that the closing price relatives
