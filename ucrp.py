@@ -1,14 +1,13 @@
-"""
-    This file implements the uniform constant rebalancing portfolio (UCRP).
-
-    UCRP serves as a very simple baseline.
-"""
-
 import util
 from portfolio import Portfolio
 
 
 class UniformConstantRebalancedPortfolio(Portfolio):
+    """
+        This file implements the uniform constant rebalancing portfolio (UCRP).
+
+        UCRP serves as a very simple baseline.
+    """
 
     def run(self):
         print 'Running UCRP'

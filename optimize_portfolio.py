@@ -10,9 +10,9 @@
 from ucrp import UniformConstantRebalancedPortfolio
 from ubah import UniformBuyAndHoldPortfolio
 from util import load_matlab_sp500_data
-from market_data import MarketData
 from expert_pool import ExpertPool
 from olmar import OLMAR
+from rmr import RMR
 
 
 """
@@ -30,19 +30,25 @@ if __name__ == "__main__":
     print 'Number of stocks in training set: ', num_stocks
     print 'Number of days in training set: ', num_train_days
 
+    """
     olmar = OLMAR(market_data=train_data)
     olmar.run()
-    """
+
     ucrp = UniformConstantRebalancedPortfolio(market_data=train_data)
     ucrp.run()
 
     ubah = UniformBuyAndHoldPortfolio(market_data=train_data)
     ubah.run()
+    """
 
+    rmr = RMR(market_data=train_data)
+    rmr.run()
+    """
     # Expert Pooling
     ucrp2 = UniformConstantRebalancedPortfolio(market_data=train_data)
     ubah2 = UniformBuyAndHoldPortfolio(market_data=train_data)
-    pool = ExpertPool(market_data=train_data, experts=[ucrp2, ubah2])
+    olmar2 = OLMAR(market_data=train_data)
+    pool = ExpertPool(market_data=train_data, experts=[ucrp2, ubah2, olmar2])
     pool.run()
     """
 

@@ -1,14 +1,13 @@
-"""
-    This file implements the uniform buy and hold portfolio (UBAH).
-
-    UBAH servers as a very simple baseline.
-"""
-
 from util import get_uniform_allocation
 from portfolio import Portfolio
 
 
 class UniformBuyAndHoldPortfolio(Portfolio):
+    """
+    Uniform buy and hold portfolio (UBAH).
+
+    UBAH servers as a very simple baseline.
+    """
 
     def run(self):
         print 'Running UCRP'

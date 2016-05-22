@@ -1,16 +1,17 @@
-"""
-    Superclass for any portfolio optimization algorithm.
-
-"""
-
-import numpy as np
 import util
 from util import get_uniform_allocation, empirical_sharpe_ratio
-from constants import init_dollars, cost_per_dollar
+from constants import init_dollars
 from market_data import MarketData
 
 # TODO: printing results
 class Portfolio(object):
+    """
+    Superclass for any portfolio optimization algorithm.
+
+    Follows the conventions used in most of portfolio optimization
+    literature.
+    """
+
     def __init__(self, market_data):
         if not isinstance(market_data, MarketData):
             raise 'market_data input to Portfolio constructor must be a MarketData object.'

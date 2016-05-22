@@ -1,10 +1,3 @@
-"""
-    Class to pool together multiple experts (ie multiple portfolios).
-
-    This pool of experts is itself a portfolio.
-"""
-
-
 from constants import init_dollars
 from util import predict_prices
 from portfolio import Portfolio
@@ -13,6 +6,15 @@ import numpy as np
 
 
 class ExpertPool(Portfolio):
+    """
+
+    Class to pool together multiple experts (ie multiple portfolios).
+    Each day, we predict the performance of each expert based on the
+    predicted stock prices at the end of the day. Then, we distribute
+    money to each of the experts according to their predicted performance.
+
+    """
+
     def __init__(self, market_data, experts, weights=None):
         if not isinstance(market_data, MarketData):
             raise 'market_data input to ExpertPool constructor must be a MarketData object.'
