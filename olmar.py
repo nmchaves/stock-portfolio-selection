@@ -1,15 +1,17 @@
-""""
-    Online Moving Average Reversion (OLMAR) Portfolio
-"""
-
 import numpy as np
 from math import pow
 from portfolio import Portfolio
 import util
 
 # TODO: account for 0 stocks!!!!!!
+# TODO: optimal window size?
 
 class OLMAR(Portfolio):
+    """"
+    Online Moving Average Reversion (OLMAR) Portfolio
+
+
+    """
     def __init__(self, market_data, window=5, eps=10):
         """
 
@@ -26,7 +28,7 @@ class OLMAR(Portfolio):
         self.eps = eps
         super(OLMAR, self).__init__(market_data)
 
-    def olmar_predict_price_relatives(self, day):
+    def predict_price_relatives(self, day):
         """
         This function predicts the price relative vector at the end of |day| based on the moving average
         in the window |day|-w to |day|-1:
@@ -62,7 +64,7 @@ class OLMAR(Portfolio):
             cur_day_op = self.data.get_op(relative=False)[day, :]  # opening prices on |cur_day|
             return util.get_uniform_allocation(self.num_stocks, cur_day_op)
 
-        predicted_price_rel = self.olmar_predict_price_relatives(day)
+        predicted_price_rel = self.predict_price_relatives(day)
         mean_price_rel = np.mean(predicted_price_rel)  # x bar at t+1. TODO: consider if some price rels are 0
         lam = self.compute_lambda(predicted_price_rel, mean_price_rel)  # lambda at t+1
 

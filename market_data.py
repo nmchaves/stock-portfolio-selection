@@ -1,11 +1,12 @@
-"""
-    Class to represent stock market data using price relatives.
-"""
-
 import util
 
 
 class MarketData:
+    """
+    Class to represent S&P 500 stock market data.
+
+    """
+
     def __init__(self, vol, op, lo, hi, cl, stocks):
         # Store prices in both raw and relative formats
         self.raw = {
