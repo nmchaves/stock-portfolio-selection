@@ -187,3 +187,39 @@ def get_dollars(cur_day, prev_dollars, prev_b, cur_b, cpr):
             exit(0)
         else:
             return new_dollars
+
+def k_nearest_neighbors(stock, market_matrix, k, market_norms, distance_fn = None):
+    ''' 
+    Given a market window (stocks x prices), select the k stocks that are 
+    "closest" to the given stock with respect to some metric distance_fn,
+    or L2 distance if no function is specified.
+
+    :param stock:           vector of stock data 
+    :param market_matrix:   matrix of all stock data for a particular market window 
+                            (must be same size as stock vector) 
+    :param k:               number of neighbors to compute
+    :param distance_fn:     function handle of custom distance measurement fn
+    '''
+
+    assert stock.shape[0] == market_matrix.shape[1], "Your stock vector should be the same length as your market matrix."
+    m,n = market_matrix.shape
+
+    distance = np.zeros(m)
+    if distance_fn:
+        for index in range(m):
+            distance[index] = distance_fn(stock, market_matrix[index,:])
+    else:
+        stock_norm = np.dot(stock, np.transpose(stock))
+        distance = stock_norm - 2 * np.dot(market_matrix,stock) + market_norms
+
+    # Sort in ascending order and get indices of k smallest distances
+    sorted_indices = np.argsort(distance)
+    return sorted_indices[:k]
+
+def get_available_inds(avail_stocks):
+    '''
+    Calculate the indices of the day's available stocks from a boolean np array
+    specifying which stocks are valid
+    '''
+    num_total_stocks = len(avail_stocks)
+    return np.asarray([i for i in range(num_total_stocks) if avail_stocks[i] > 0])
