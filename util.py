@@ -140,7 +140,7 @@ def empirical_sharpe_ratio(dollars):
     #var = sqrt((1.0/num_days) * s)
     x_bar = np.mean(x)
     std_dev = np.std(x)
-    return (1.0 * x_bar / std_dev) * sqrt(255)  # 255 is # of trading days in 1 year
+    return (1.0 * x_bar / std_dev) * sqrt(252)  # 252 is approximate # of trading days in 1 year
 
 
 def predict_prices(cur_day, market_data):
@@ -172,7 +172,17 @@ def get_dollars(cur_day, prev_dollars, prev_b, cur_b, cpr):
             trans_costs = prev_dollars * cost_per_dollar
             return prev_dollars - trans_costs
 
-        dollars_before_trading = prev_dollars * np.dot(prev_b, cpr)
+        # TODO: check this. This updates the money held before trading (this accounts for shorting)
+        dollars_before_trading = 0
+        for (pb_i, cpr_i) in zip(prev_b, cpr):
+            if pb_i > 0:
+                dollars_before_trading += pb_i * cpr_i
+            elif pb_i < 0:
+                # This stock is being shorted. We made money if the price decreased
+                dollars_before_trading += abs(pb_i) * 1.0 / cpr_i
+        dollars_before_trading *= prev_dollars
+
+        #dollars_before_trading = prev_dollars * np.dot(prev_b, cpr)
         if dollars_before_trading <= 0:
             print 'The UCR portfolio ran out of money on day ', str(cur_day), '!'
             exit(0)
@@ -188,38 +198,9 @@ def get_dollars(cur_day, prev_dollars, prev_b, cur_b, cpr):
         else:
             return new_dollars
 
-def k_nearest_neighbors(stock, market_matrix, k, market_norms, distance_fn = None):
-    ''' 
-    Given a market window (stocks x prices), select the k stocks that are 
-    "closest" to the given stock with respect to some metric distance_fn,
-    or L2 distance if no function is specified.
-
-    :param stock:           vector of stock data 
-    :param market_matrix:   matrix of all stock data for a particular market window 
-                            (must be same size as stock vector) 
-    :param k:               number of neighbors to compute
-    :param distance_fn:     function handle of custom distance measurement fn
-    '''
-
-    assert stock.shape[0] == market_matrix.shape[1], "Your stock vector should be the same length as your market matrix."
-    m,n = market_matrix.shape
-
-    distance = np.zeros(m)
-    if distance_fn:
-        for index in range(m):
-            distance[index] = distance_fn(stock, market_matrix[index,:])
-    else:
-        stock_norm = np.dot(stock, np.transpose(stock))
-        distance = stock_norm - 2 * np.dot(market_matrix,stock) + market_norms
-
-    # Sort in ascending order and get indices of k smallest distances
-    sorted_indices = np.argsort(distance)
-    return sorted_indices[:k]
-
-def get_available_inds(avail_stocks):
-    '''
-    Calculate the indices of the day's available stocks from a boolean np array
-    specifying which stocks are valid
-    '''
-    num_total_stocks = len(avail_stocks)
-    return np.asarray([i for i in range(num_total_stocks) if avail_stocks[i] > 0])
+def save_results(output_fname, dollars):
+    print 'Saving dollar value to file: ', output_fname
+    output_file = open(output_fname, 'w')
+    output_file.write('Empricial Sharpe Ratio: ' + str(empirical_sharpe_ratio(dollars)) + '\n')
+    output_file.write('\t'.join(map(str, dollars)) + '\n')
+    output_file.close()

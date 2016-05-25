@@ -1,3 +1,4 @@
+import util
 from util import get_uniform_allocation
 from portfolio import Portfolio
 
@@ -14,7 +15,7 @@ class UniformBuyAndHoldPortfolio(Portfolio):
         for day in range(0, self.num_days):
             self.update(day)
         self.print_results()
-        # self.save_results()
+        self.save_results()
 
     def get_new_allocation(self, cur_day):
         if cur_day == 0:
@@ -33,6 +34,4 @@ class UniformBuyAndHoldPortfolio(Portfolio):
 
     def save_results(self):
         output_fname = 'results/uniform_buy_and_hold_dollars_over_time.txt'
-        print 'Saving dollar value to file: ', output_fname
-        output_file = open(output_fname, 'w')
-        output_file.write('\t'.join(map(str, self.dollars_history)))
+        util.save_results(output_fname, self.dollars_history)

@@ -1,5 +1,7 @@
 from olmar import OLMAR
 import numpy as np
+from portfolio import Portfolio
+import util
 
 class RMR(OLMAR):
     """"
@@ -28,7 +30,6 @@ class RMR(OLMAR):
         (This plays the role of t+1 in the above equation.)
         :return: The predicted price relatives vector.
         """
-        print 'RMR!!'
         window = self.window
         if day <= window:
             # Full window is not available
@@ -49,7 +50,6 @@ class RMR(OLMAR):
             thresh = self.tau * np.linalg.norm(mu, ord=1)
             if L1_dist <= thresh:
                 break
-        print 'last i: ', i
 
         price_rel = np.nan_to_num(np.true_divide(mu, prev_cl))
         return price_rel
@@ -80,7 +80,14 @@ class RMR(OLMAR):
 
         return T_bar + min(1.0, gamma_inv) * mu
 
+    def print_results(self):
+        print 30 * '-'
+        print 'Performance for RMR:'
+        print 30 * '-'
+        Portfolio.print_results(self)
 
-
+    def save_results(self):
+        output_fname = 'results/new/rmr.txt'
+        util.save_results(output_fname, self.dollars_history)
 
 

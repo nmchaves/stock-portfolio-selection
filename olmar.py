@@ -35,6 +35,10 @@ class OLMAR(Portfolio):
 
         x_t+1 = MovingAvg/p_t = (1/w)(p_t/p_t + p_t-1/p_t + ... + p_t-w+1/p_t)
 
+        TODO: check if this actually makes sense...
+        Note: Since we have access to the open prices, we let p_t be the open price on |day|. The other
+        price p_t-i are all closing prices.
+
         :param day: The day to predict the closing price relatives for.
         (This plays the role of t+1 in the above equation.)
         :return: The predicted price relatives vector.
@@ -44,7 +48,6 @@ class OLMAR(Portfolio):
             # Full window is not available
             window = day
 
-        # TODO: consider using more than just close prices, since we also have opens!
         window_cl = self.data.get_cl(relative=False)[day-window:day, :]
         moving_avg_cl = np.mean(window_cl, axis=0)
         prev_cl = self.data.get_cl(relative=False)[day-1, :]
@@ -78,7 +81,13 @@ class OLMAR(Portfolio):
             ppr = predicted_price_rel[i]
             if ppr != 0:
                 new_b[i] = self.b[i] + lam * (ppr - mean_price_rel)
-        new_b = (1.0/sum(new_b)) * new_b  # normalize b so it sums to 1
+        """
+        min_b = min(new_b)
+        if min_b <= 0:
+            print 'min b:', min_b
+        """
+
+        new_b = (1.0/np.linalg.norm(new_b, ord=1)) * new_b  # normalize b so it sums to 1
         return new_b
 
     def run(self):
@@ -96,8 +105,10 @@ class OLMAR(Portfolio):
         Portfolio.print_results(self)
 
     def save_results(self):
-        output_fname = 'results/olmar.txt'
-        print 'Saving dollar value to file: ', output_fname
-        output_file = open(output_fname, 'w')
-        output_file.write('\t'.join(map(str, self.dollars_hist)))
+        output_fname = 'results/new/olmar.txt'
+        util.save_results(output_fname, self.dollars_history)
+
+    def tune_hyperparams(self, day):
+        #self.window = best_window...
+        return
 

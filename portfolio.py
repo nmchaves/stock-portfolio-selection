@@ -23,13 +23,14 @@ class Portfolio(object):
         self.b = None # self.init_portfolio_uniform()  # b[i] = Percent of total money allocated to stock i
         self.b_history = []  # History of allocations over time
         self.dollars = init_dollars
-        self.dollars_history = []
-
-    def get_b(self):
-        return self.b
+        self.dollars_history = [self.dollars]
 
     def run(self):
         raise 'run is an abstract method, so it must be implemented by the child class!'
+
+    def tune_hyperparams(self, cur_day):
+        # Implement this in your portfolio if you want to tune
+        return
 
     def update(self, cur_day):
         """
@@ -38,11 +39,12 @@ class Portfolio(object):
         :param cur_day: 0-based index of today's date
         :return: None
         """
+        self.tune_hyperparams(cur_day)
         self.update_allocation(cur_day)
 
-        prev_dollars = self.dollars
-        self.dollars_history.append(prev_dollars)
-        self.dollars = self.get_dollars(cur_day)
+        new_dollars = self.calc_dollars(cur_day)
+        self.dollars = new_dollars
+        self.dollars_history.append(new_dollars)
 
     def update_allocation(self, cur_day):
         if cur_day != 0:
@@ -61,7 +63,7 @@ class Portfolio(object):
         day_1_op = self.data.get_op(relative=False)[0, :]  # raw opening prices on 1st day
         return get_uniform_allocation(self.num_stocks, day_1_op)
 
-    def get_dollars(self, cur_day, prev_b=None, cur_b=None, cpr=None):
+    def calc_dollars(self, cur_day, prev_b=None, cur_b=None, cpr=None):
         """
         Calculate the portfolio's wealth for the end of |cur_day| after buying/selling stocks
         at their closing prices.
@@ -101,7 +103,7 @@ class Portfolio(object):
             return 1
         prev_b = self.b_history[cur_day-1]
         # TODO: case when this portfolio has no money
-        est_perf = (1.0 / self.dollars) * self.get_dollars(cur_day, prev_b=prev_b, cur_b=self.b, cpr=est_cl)
+        est_perf = (1.0 / self.dollars) * self.calc_dollars(cur_day, prev_b=prev_b, cur_b=self.b, cpr=est_cl)
         return est_perf
 
     def print_results(self):
@@ -111,3 +113,12 @@ class Portfolio(object):
         print empirical_sharpe_ratio(self.dollars_history)
         #plt.plot(self.dollars_hist)
         #plt.show()
+
+    """
+    Getters
+    """
+    def get_b(self):
+        return self.b
+
+    def get_dollars_history(self):
+        return self.dollars_history

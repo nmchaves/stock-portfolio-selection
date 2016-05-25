@@ -74,7 +74,7 @@ class UniformSemiConstantRebalancedPortfolio(util.Portfolio):
             self.shares_held_hist = np.append(self.shares_held_hist, [self.shares_holding], axis=0)
 
         self.print_results()
-        #self.save_results()
+        self.save_results()
 
     def print_results(self):
         print 30 * '-'
@@ -88,7 +88,7 @@ class UniformSemiConstantRebalancedPortfolio(util.Portfolio):
         #plt.show()
 
     def save_results(self):
-        output_fname = 'results/semi_const_rebalancing_dollars_over_time_interval_' + str(self.interval) + '.txt'
+        output_fname = 'results_low_trans_cost/2_semi_const_rebalancing_dollars_over_time_interval_' + str(self.interval) + '.txt'
         print 'Saving dollar value to file: ', output_fname
         output_file = open(output_fname, 'w')
         output_file.write('\t'.join(map(str, self.dollars_hist)))

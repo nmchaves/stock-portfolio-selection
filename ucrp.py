@@ -14,7 +14,7 @@ class UniformConstantRebalancedPortfolio(Portfolio):
         for day in range(0, self.num_days):
             self.update(day)
         self.print_results()
-        # self.save_results()
+        self.save_results()
 
     def get_new_allocation(self, cur_day):
         cur_day_op = self.data.get_op(relative=False)[cur_day, :]  # opening prices on |cur_day|
@@ -29,8 +29,6 @@ class UniformConstantRebalancedPortfolio(Portfolio):
         print self.b_history[-1]
 
     def save_results(self):
-        output_fname = 'results/const_rebalancing_dollars_over_time.txt'
-        print 'Saving dollar value to file: ', output_fname
-        output_file = open(output_fname, 'w')
-        output_file.write('\t'.join(map(str, self.dollars_history)))
+        output_fname = 'results/new/const_rebalancing_dollars_over_time.txt'
+        util.save_results(output_fname, self.dollars_history)
 
