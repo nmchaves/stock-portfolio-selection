@@ -35,13 +35,32 @@ class RMR(OLMAR):
             # Full window is not available
             window = day
 
-        # TODO: consider using more than just close prices, since we also have opens!
+        window_cl = self.data.get_cl(relative=False)[day-window:day, :]
+        today_op = self.data.get_op(relative=False)[day, :]
+        today_op = np.reshape(today_op, newshape=(1, self.num_stocks))
+        window_prices = np.append(window_cl, today_op, axis=0)
+
+        mu = np.median(window_prices, axis=0)  # TODO: median when window size is 2?? np gives mean...
+
+        for i in range(1, self.max_iter):
+            prev_mu = mu
+            mu = self.T_func(mu, window_prices)
+            L1_dist = np.linalg.norm((prev_mu-mu), ord=1)
+            thresh = self.tau * np.linalg.norm(mu, ord=1)
+            if L1_dist <= thresh:
+                break
+
+        price_rel = util.silent_divide(mu, today_op)
+        return price_rel
+        """
         window_cl = self.data.get_cl(relative=False)[day-window:day, :] # TODO: check
         prev_cl = self.data.get_cl(relative=False)[day-1, :]
+
         if window > 1:
             mu = np.median(window_cl, axis=0)  # TODO: median when window size is 2?? np gives mean...
         else:
             return prev_cl  # TODO: cleaner approach. this prevents divide by 0 in T_func
+
 
         for i in range(1, self.max_iter):
             prev_mu = mu
@@ -53,6 +72,7 @@ class RMR(OLMAR):
 
         price_rel = np.nan_to_num(np.true_divide(mu, prev_cl))
         return price_rel
+        """
 
     def T_func(self, mu, window_cl):
         """
@@ -89,5 +109,6 @@ class RMR(OLMAR):
     def save_results(self):
         output_fname = 'results/new/rmr.txt'
         util.save_results(output_fname, self.dollars_history)
+
 
 

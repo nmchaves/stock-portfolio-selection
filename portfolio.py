@@ -3,7 +3,7 @@ from util import get_uniform_allocation, empirical_sharpe_ratio
 from constants import init_dollars
 from market_data import MarketData
 
-# TODO: printing results
+
 class Portfolio(object):
     """
     Superclass for any portfolio optimization algorithm.
@@ -12,47 +12,86 @@ class Portfolio(object):
     literature.
     """
 
-    def __init__(self, market_data):
+    def __init__(self, market_data, start=0, stop=None, rebal_interval=1, tune_interval=None,
+                 init_b=None, init_dollars=init_dollars, init_dollars_hist=None):
+        """
+        :param market_data: Stock market data (MarketData object)
+        :param start: What day this portfolio starts at
+        :param init_b: An initial allocation to make at the end of the 1st day. This is useful if
+        you want to inject prior knowledge about which stocks you think will perform well. Also useful
+        for tuning hyperparameters, because we may want the portfolio to start out in a particular state.
+        :param rebal_interval: Rebalance interval (Rebalance the portfolio every |reb_int| days)
+        """
+
         if not isinstance(market_data, MarketData):
             raise 'market_data input to Portfolio constructor must be a MarketData object.'
 
         self.data = market_data
         self.num_stocks = len(self.data.stock_names)
-        self.num_days = self.data.get_vol().shape[0]
+        self.start = start
 
-        self.b = None # self.init_portfolio_uniform()  # b[i] = Percent of total money allocated to stock i
+        if stop:
+            self.stop = stop
+            self.num_days = stop - start
+        else:
+            last_day = self.data.get_vol().shape[0]
+            self.stop = last_day
+            self.num_days = self.start - last_day
+
+        self.rebal_interval = rebal_interval  # How often to rebalance
+        self.tune_interval = tune_interval  # How often to tune hyperparams (if at all)
+
+        self.b = None  # b[i] = Fraction of total money allocated to stock i
         self.b_history = []  # History of allocations over time
         self.dollars = init_dollars
         self.dollars_history = [self.dollars]
 
-    def run(self):
+    def run(self, start, end):
         raise 'run is an abstract method, so it must be implemented by the child class!'
 
     def tune_hyperparams(self, cur_day):
         # Implement this in your portfolio if you want to tune
-        return
+        raise 'tune_hyperparams is an abstract method, so it must be implemented by the child class!'
 
-    def update(self, cur_day):
+    def update(self, cur_day, init=False):
         """
-        Update the portfolio.
+        Update the portfolio
 
         :param cur_day: 0-based index of today's date
+        :param init: If True, this portfolio is being initialized today.
         :return: None
         """
-        self.tune_hyperparams(cur_day)
-        self.update_allocation(cur_day)
+
+        # Check if we need to tune hyperparameters
+        if self.tune_interval:
+            if cur_day > 0 and cur_day % self.tune_interval == 0:
+                self.tune_hyperparams(cur_day)
+
+        self.update_allocation(cur_day, init)
 
         new_dollars = self.calc_dollars(cur_day)
         self.dollars = new_dollars
         self.dollars_history.append(new_dollars)
+        return
 
-    def update_allocation(self, cur_day):
-        if cur_day != 0:
+    def update_allocation(self, cur_day, init=False):
+        """
+
+        :param cur_day:
+        :param init: If True, this portfolio is being initialized today.
+        :return:
+        """
+        if cur_day != 0 and not init:
             self.b_history.append(self.b)
 
-        self.b = self.get_new_allocation(cur_day)
+        if self.rebal_interval and (cur_day % self.rebal_interval) != 0:
+            # Don't make any trades today (avoid transaction costs)
+            # TODO: need to use special flags to indicate hold when using Yanjun's framework.
+            return
 
-    def get_new_allocation(self, cur_day):
+        self.b = self.get_new_allocation(cur_day, init)
+
+    def get_new_allocation(self, cur_day, init=False):
         raise 'get_new_allocation is an abstract method, so it must be implemented by the child class!'
 
     def init_portfolio_uniform(self):

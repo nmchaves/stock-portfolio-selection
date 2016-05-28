@@ -49,12 +49,19 @@ def get_price_relatives(raw_prices):
 
 def get_standardized_prices(raw_prices):
     n_stocks = raw_prices.shape[1]
-    prices_std = np.zeros(raw_prices.shape)
-    for col in n_stocks:
-        cur_raw = raw_prices[:, col]
-        cur_std = (1.0 / np.std(cur_raw)) * (cur_raw - np.mean(cur_raw))
-        prices_std[:, col] = cur_std
-    return prices_std
+    n_days = raw_prices.shape[0]
+    prices_scaled = np.zeros(raw_prices.shape)
+
+    for col in range(n_stocks):
+        cur_raw = np.nan_to_num(raw_prices[:, col])
+        cur_std = np.std(cur_raw)
+        if cur_std != 0:
+            cur_scaled = (1.0 / np.std(cur_raw)) * (cur_raw - np.mean(cur_raw))
+        else:
+            cur_scaled = np.zeros(n_days)
+        prices_scaled[:, col] = cur_scaled
+
+    return prices_scaled
 
 
 def get_avail_stocks(op_prices):

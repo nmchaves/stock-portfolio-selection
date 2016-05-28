@@ -41,12 +41,30 @@ if __name__ == "__main__":
     print 'Number of stocks in training set: ', num_stocks
     print 'Number of days in training set: ', num_train_days
 
-
-    olmar = OLMAR(market_data=train_data)
+    olmar = OLMAR(market_data=train_data, tune_interval=None)
     olmar.run()
 
+    # Expert Pooling using Exponential Window Performance
+    rmr3 = RMR(market_data=train_data)
+    olmar3 = OLMAR(market_data=train_data)
+    #ucrp3 = UniformConstantRebalancedPortfolio(market_data=train_data)
+    #ubah3 = UniformBuyAndHoldPortfolio(market_data=train_data)
+    pool = ExpertPool(market_data=train_data, experts=[rmr3, olmar3], weighting_strategy='exp_window', windows=[5])
+    pool.run()
+
+    """
     rmr = RMR(market_data=train_data)
     rmr.run()
+    """
+    """
+    # Expert Pooling using Moving Average Performance
+    rmr3 = RMR(market_data=train_data)
+    ucrp3 = UniformConstantRebalancedPortfolio(market_data=train_data)
+    ubah3 = UniformBuyAndHoldPortfolio(market_data=train_data)
+    olmar3 = OLMAR(market_data=train_data)
+    pool = ExpertPool(market_data=train_data, experts=[rmr3, olmar3], weighting_strategy='exp_window', windows=[5])
+    pool.run()
+    """
 
     """
     ucrp = UniformConstantRebalancedPortfolio(market_data=train_data)
@@ -57,7 +75,11 @@ if __name__ == "__main__":
 
     rmr = RMR(market_data=train_data)
     rmr.run()
-    """
+
+    olmar4 = OLMAR(market_data=train_data)
+    rmr4 = RMR(market_data=train_data)
+    pool = ExpertPool(market_data=train_data, experts=[olmar4, rmr4], weighting_strategy='open_price')
+    pool.run()
 
 
     # Expert Pooling using Open Prices
@@ -67,13 +89,4 @@ if __name__ == "__main__":
     olmar2 = OLMAR(market_data=train_data)
     pool = ExpertPool(market_data=train_data, experts=[ucrp2, ubah2, olmar2, rmr2], weighting_strategy='open_price')
     pool.run()
-
-    # Expert Pooling using Moving Average Performance
-    rmr3 = RMR(market_data=train_data)
-    ucrp3 = UniformConstantRebalancedPortfolio(market_data=train_data)
-    ubah3 = UniformBuyAndHoldPortfolio(market_data=train_data)
-    olmar3 = OLMAR(market_data=train_data)
-    pool = ExpertPool(market_data=train_data, experts=[ucrp3, ubah3, olmar3, rmr3], weighting_strategy='ma_perf')
-    pool.run()
-
-
+    """
