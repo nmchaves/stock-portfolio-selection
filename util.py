@@ -3,7 +3,7 @@
 """
 import numpy as np
 from scipy import io
-from math import sqrt
+from math import sqrt, isnan
 import market_data
 from constants import cost_per_dollar
 
@@ -47,6 +47,16 @@ def get_price_relatives(raw_prices):
     return price_relatives
 
 
+def get_standardized_prices(raw_prices):
+    n_stocks = raw_prices.shape[1]
+    prices_std = np.zeros(raw_prices.shape)
+    for col in n_stocks:
+        cur_raw = raw_prices[:, col]
+        cur_std = (1.0 / np.std(cur_raw)) * (cur_raw - np.mean(cur_raw))
+        prices_std[:, col] = cur_std
+    return prices_std
+
+
 def get_avail_stocks(op_prices):
     """
     Based on the opening prices for a given day, get the set of stocks that one can
@@ -57,10 +67,9 @@ def get_avail_stocks(op_prices):
     """
     avail_stocks = [0] * len(op_prices)
     for i, price in enumerate(op_prices):
-        # If price is a valid number, then we can purchase the
+        # If price is a valid number > 0, then we can purchase the
         # stock at the end of the day
-        #if not isnan(price):
-        if price > 0:
+        if (not isnan(price)) and price > 0:
             avail_stocks[i] = 1
     return avail_stocks
 
@@ -84,26 +93,6 @@ def dollars_in_stocks(shares_holding, share_prices):
     # Return total amount of money held in stocks
     return np.dot(shares_holding, share_prices)
 
-'''
-def dollars_away_from_uniform(shares_holding, share_prices, dollars_per_stock):
-    """
-    This function determines how far the current portfolio is (in terms of dollars)
-    from a uniformly distributed portfolio.
-
-    :param shares_holding: The shares that are currently held
-    :param share_prices: The opening share prices today
-    :param dollars_per_stock: Number of dollars that would be invested in each stock
-    if the portfolio were completely uniform.
-    :return: Distance from uniform portfolio in dollars
-    """
-
-    distance = 0
-    for share, price in zip(shares_holding, share_prices):
-        if not isnan(price):
-            distance += abs(share * price - dollars_per_stock)
-
-    return distance
-'''
 
 def get_float_array_from_file(path):
     """
@@ -130,14 +119,9 @@ def empirical_sharpe_ratio(dollars):
     :return: Sharpe ratio
     """
 
-    # TODO: check this, e.g. determine if dollars[0]=1 or 0.9995 and fix variance computation
+    # TODO: check this, e.g. determine if dollars[0]=1 or 0.9995
     num_days = len(dollars)
     x = [dollars[i] - dollars[i-1] for i in range(1, num_days)]
-    print 'x: '
-    print x
-    #x_bar = 1.0 * (dollars[-1] - dollars[0]) / num_days
-    #s = sum([(x_i - x_bar)**2 for x_i in x])
-    #var = sqrt((1.0/num_days) * s)
     x_bar = np.mean(x)
     std_dev = np.std(x)
     return (1.0 * x_bar / std_dev) * sqrt(252)  # 252 is approximate # of trading days in 1 year
@@ -184,7 +168,7 @@ def get_dollars(cur_day, prev_dollars, prev_b, cur_b, cpr):
 
         #dollars_before_trading = prev_dollars * np.dot(prev_b, cpr)
         if dollars_before_trading <= 0:
-            print 'The UCR portfolio ran out of money on day ', str(cur_day), '!'
+            print 'The portfolio ran out of money on day ', str(cur_day), '!'
             exit(0)
 
         L1_dist = np.linalg.norm((prev_b - cur_b), ord=1)  # L1 distance between new and old allocations
@@ -193,10 +177,49 @@ def get_dollars(cur_day, prev_dollars, prev_b, cur_b, cpr):
         new_dollars = dollars_before_trading - dollars_trading * cost_per_dollar
 
         if new_dollars <= 0:
-            print 'The UCR portfolio ran out of money on day ', str(cur_day), '!'
+            print 'The portfolio ran out of money on day ', str(cur_day), '!'
             exit(0)
         else:
             return new_dollars
+
+
+def k_nearest_neighbors(stock, market_matrix, k, market_norms, distance_fn = None):
+    '''
+    Given a market window (stocks x prices), select the k stocks that are
+    "closest" to the given stock with respect to some metric distance_fn,
+    or L2 distance if no function is specified.
+
+    :param stock:           vector of stock data
+    :param market_matrix:   matrix of all stock data for a particular market window
+                            (must be same size as stock vector)
+    :param k:               number of neighbors to compute
+    :param distance_fn:     function handle of custom distance measurement fn
+    '''
+
+    assert stock.shape[0] == market_matrix.shape[1], "Your stock vector should be the same length as your market matrix."
+    m,n = market_matrix.shape
+
+    distance = np.zeros(m)
+    if distance_fn:
+        for index in range(m):
+            distance[index] = distance_fn(stock, market_matrix[index,:])
+    else:
+        stock_norm = np.dot(stock, np.transpose(stock))
+        distance = stock_norm - 2 * np.dot(market_matrix,stock) + market_norms
+
+    # Sort in ascending order and get indices of k smallest distances
+    sorted_indices = np.argsort(distance)
+    return sorted_indices[:k]
+
+
+def get_available_inds(avail_stocks):
+    '''
+    Calculate the indices of the day's available stocks from a boolean np array
+    specifying which stocks are valid
+    '''
+    num_total_stocks = len(avail_stocks)
+    return np.asarray([i for i in range(num_total_stocks) if avail_stocks[i] > 0])
+
 
 def save_results(output_fname, dollars):
     print 'Saving dollar value to file: ', output_fname
@@ -204,3 +227,15 @@ def save_results(output_fname, dollars):
     output_file.write('Empricial Sharpe Ratio: ' + str(empirical_sharpe_ratio(dollars)) + '\n')
     output_file.write('\t'.join(map(str, dollars)) + '\n')
     output_file.close()
+
+
+def silent_divide(a,b):
+    """
+    Element-wise division of the array a by the array b. This function converts nan to 0 and inf to a large #
+    using np.nan_to_num.
+
+    The function also silences the runtime warning "invalid value encountered in true_divide", b/c we handle
+    these values using np.nan_to_num.
+    """
+    with np.errstate(invalid='ignore'):
+        return np.nan_to_num(np.true_divide(a, b))

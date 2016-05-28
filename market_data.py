@@ -23,7 +23,13 @@ class MarketData:
             'hi': util.get_price_relatives(hi),
             'cl': util.get_price_relatives(cl)
         }
+        self.standardized = {
+            'cl': util.get_standardized_prices(cl)
+        }
         self.stock_names = stocks
+
+    def get_std_cl(self):
+        return self.standardized['cl']
 
     def get_vol(self, relative=True):
         """
