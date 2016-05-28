@@ -7,13 +7,14 @@ from cvxpy import *
 import pdb
 
 class NonParametricMarkowitz(Portfolio):
-    def __init__(self, market_data, window_len, k, risk_aversion, start_date):
+    def __init__(self, market_data, window_len, k, risk_aversion, start_date, portfolio_cap=0.10):
         self.window_len = window_len
         self.k = k
         self.risk_aversion = risk_aversion
         self.start_date = start_date
         self.mu = None 
         self.sigma = None
+        self.cap = portfolio_cap
         super(NonParametricMarkowitz,self).__init__(market_data)
 
     def get_market_window(self, window, day):
@@ -66,21 +67,26 @@ class NonParametricMarkowitz(Portfolio):
             b = Variable(num_available)
             c = Variable(num_available)
 
+            if(cur_day == 100):
+                pdb.set_trace()
+
             d = 0
+            e = 0
             for i in range(num_available):
                 inds = available_inds[neighbors[i,:]]
                 m_i = self.mu[inds]
                 S_i = self.sigma[inds,:]
                 S_i = S_i[:,inds]
-                d += (b[i]*m_i).T*np.ones(k) - l*quad_form(b[i]*np.ones(k), S_i)
-                
-            constraints = [c>= b, c >= -b, sum_entries(c)==1]
-            objective = Maximize(d)
-            prob = Problem(objective, constraints)
-            prob.solve()
+                d += (b[i]*m_i).T*np.ones(k) 
+                e += quad_form(b[i]*np.ones(k), S_i)
+                    
+                constraints = [c>= b, c >= -b, sum_entries(c)==1, b <= self.cap, b >= -self.cap] #[b >= 0, np.ones(num_available).T*b == 1]
+                objective = Maximize(d-l*e)
+                prob = Problem(objective, constraints)
+                prob.solve()
 
-            new_allocation = np.zeros(len(available))
-            new_allocation[available_inds] = b.value
+                new_allocation = np.zeros(len(available))
+                new_allocation[available_inds] = b.value
 
         return new_allocation
 
@@ -111,41 +117,25 @@ class NonParametricMarkowitz(Portfolio):
                 self.sigma = N/(N+1.0) * (self.sigma+np.outer(mu_N, mu_N)) - np.outer(self.mu, self.mu) + 1/(N+1.0)*np.outer(last_close, last_close)
             else:
                 self.sigma = N/(N+1.0) * (self.sigma + np.diag(mu_N**2)) - np.diag(self.mu**2) + 1/(N+1.0)*np.diag(last_close**2)
-            # self.mu = np.zeros(num_total_stocks).astype(float)
-            # self.sigma = np.zeros((num_total_stocks,num_total_stocks)).astype(float)
-
-                
-            # ML estimation of parameters for diagonal sigma
-            # for i in range(1,cur_day):
-            #     close = self.data.get_cl()[i,:]
-            #     self.mu += close
-            #     self.sigma += np.diag(close ** 2)
-            # self.mu /= num_examples
-            # self.sigma = self.sigma/num_examples - np.diag(self.mu**2)
-
 
     def run(self):
         for day in range(0, self.num_days):
-            print 'Day' + str(day)
+            if(day % 100 == 0):
+                print 'Day' + str(day)
             self.update_statistics(day)
             self.update(day)
 
         self.print_results()
-        self.save_results()
+        #self.save_results()
 
     def print_results(self):
         print 30 * '-'
-        print 'Performance for nonparametric markowitz portfolio:'
+        print 'Performance for Nonparametric Markowitz Portfolio:'
         print 30 * '-'
-        #print self.shares_holding
-        print 'Total dollar value of assets:'
-        print util.dollars_in_stocks(self.shares_holding, self.data.cl[-1, :])
-        print 'Sharpe ratio: TODO'
-        #plt.plot(self.dollars_hist)
-        #plt.show()
+        Portfolio.print_results(self)
 
     def save_results(self):
-        output_fname = 'results/nonparametric_markowitz.txt'
+        output_fname = 'results/nonparametric_markowitz_w' + str(self.window_len) + '_k' + str(self.k) + '_e' + self.risk_aversion + '_s' + str(self.start_date) +  '.txt'
         print 'Saving dollar value to file: ', output_fname
         output_file = open(output_fname, 'w')
-        output_file.write('\t'.join(map(str, self.dollars_hist)))
+        output_file.write('\t'.join(map(str, self.dollars_history)))
