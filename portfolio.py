@@ -1,6 +1,6 @@
 import util
 from util import get_uniform_allocation, empirical_sharpe_ratio
-from constants import init_dollars
+from constants import init_dollars, cost_per_dollar
 from market_data import MarketData
 
 
@@ -13,7 +13,7 @@ class Portfolio(object):
     """
 
     def __init__(self, market_data, start=0, stop=None, rebal_interval=1, tune_interval=None,
-                 init_b=None, init_dollars=init_dollars, init_dollars_hist=None):
+                 init_b=None, init_dollars=init_dollars, init_dollars_hist=None, verbose=False):
         """
         :param market_data: Stock market data (MarketData object)
         :param start: What day this portfolio starts at
@@ -41,13 +41,16 @@ class Portfolio(object):
         self.rebal_interval = rebal_interval  # How often to rebalance
         self.tune_interval = tune_interval  # How often to tune hyperparams (if at all)
 
-        self.b = None  # b[i] = Fraction of total money allocated to stock i
-        self.b_history = []  # History of allocations over time
+        self.b = init_b  # b[i] = Fraction of total money allocated to stock i
+        self.b_history = [init_b]  # History of allocations over time
         self.dollars = init_dollars
         self.dollars_history = [self.dollars]
+        self.verbose = verbose
 
+    """
     def run(self, start, end):
         raise 'run is an abstract method, so it must be implemented by the child class!'
+    """
 
     def tune_hyperparams(self, cur_day):
         # Implement this in your portfolio if you want to tune
@@ -69,7 +72,7 @@ class Portfolio(object):
 
         self.update_allocation(cur_day, init)
 
-        new_dollars = self.calc_dollars(cur_day)
+        new_dollars = self.calc_dollars(cur_day, init)
         self.dollars = new_dollars
         self.dollars_history.append(new_dollars)
         return
@@ -81,6 +84,10 @@ class Portfolio(object):
         :param init: If True, this portfolio is being initialized today.
         :return:
         """
+        if init and (self.b is not None):
+            # b has already been initialized using initialization argument init_b
+            return
+
         if cur_day != 0 and not init:
             self.b_history.append(self.b)
 
@@ -102,7 +109,7 @@ class Portfolio(object):
         day_1_op = self.data.get_op(relative=False)[0, :]  # raw opening prices on 1st day
         return get_uniform_allocation(self.num_stocks, day_1_op)
 
-    def calc_dollars(self, cur_day, prev_b=None, cur_b=None, cpr=None):
+    def calc_dollars(self, cur_day, init=False):
         """
         Calculate the portfolio's wealth for the end of |cur_day| after buying/selling stocks
         at their closing prices.
@@ -116,16 +123,26 @@ class Portfolio(object):
         obtain the price relatives using self.data
         :return: The new # of dollars held
         """
-
+        '''
         if cpr is None:
             cpr = self.data.get_cl(relative=True)[cur_day, :]  # closing price relatives
         if cur_b is None:
             cur_b = self.b
         if prev_b is None and cur_day > 0:
             prev_b = self.b_history[cur_day-1]
+        '''
+        cur_dollars = self.dollars
+        if cur_day == 0 or init:
+            # Only buy stocks on day 0 (no selling)
+            trans_costs = self.dollars * cost_per_dollar
+            return cur_dollars - trans_costs
+        else:
+            cur_b = self.b
+            cpr = self.data.get_cl(relative=True)[cur_day, :]
+            prev_b = self.b_history[-1]
+            return util.get_dollars(cur_day, cur_dollars, prev_b, cur_b, cpr)
 
-        return util.get_dollars(cur_day, self.dollars, prev_b, cur_b, cpr)
-
+    '''
     def predict_performance(self, cur_day, est_cl):
         """
         Predict performance of this portfolio assuming that the closing price relatives
@@ -144,6 +161,31 @@ class Portfolio(object):
         # TODO: case when this portfolio has no money
         est_perf = (1.0 / self.dollars) * self.calc_dollars(cur_day, prev_b=prev_b, cur_b=self.b, cpr=est_cl)
         return est_perf
+    '''
+
+    def run(self, start=None, stop=None):
+        """
+
+        :param start:
+        :param stop:
+        :return: None
+        """
+
+        if start is None:
+            start = self.start
+        if stop is None:
+            stop = self.stop
+
+        for day in range(start, stop):
+            if day == start:
+                init = True
+            else:
+                init = False
+            self.update(day, init)
+
+        if self.verbose:
+            self.print_results()
+        #self.save_results()
 
     def print_results(self):
         print 'Total dollar value of assets over time:'

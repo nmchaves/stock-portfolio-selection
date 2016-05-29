@@ -144,6 +144,25 @@ def predict_prices(cur_day, market_data):
     est_prs = np.nan_to_num(market_data.get_op(relative=True)[cur_day, :])
     return est_prs
 
+def get_dollars_ipy(op, cl, value_op, portfolio, prev_dollars):
+        """
+        Calculate a portfolio's wealth for the end of |cur_day| after buying/selling stocks
+        at their closing prices.
+        Uses code from course staff.
+        """
+        isActive = np.isfinite(op)
+
+        """
+        # The value of our portfolio at the end of Day t before paying transaction costs
+        cl = test_cl[t,:]
+        value_vec = value_op_seq[t] * portfolio_seq[:,t]
+        growth = cl[isActive] / last_close_price[isActive]-1
+        growth[np.isnan(growth)] = 0
+        revenue_vec = value_vec[isActive] * growth
+        value_vec[isActive] = value_vec[isActive] + revenue_vec
+        value_cl_seq[t] = value_op_seq[t] + np.sum(revenue_vec)
+        """
+
 
 def get_dollars(cur_day, prev_dollars, prev_b, cur_b, cpr):
         """
@@ -157,11 +176,6 @@ def get_dollars(cur_day, prev_dollars, prev_b, cur_b, cpr):
         :param cpr: Closing price relatives for the end of |cur_day|.
         :return: The new # of dollars held
         """
-
-        if cur_day == 0:
-            # Only buy stocks on day 0 (no selling)
-            trans_costs = prev_dollars * cost_per_dollar
-            return prev_dollars - trans_costs
 
         # TODO: check this. This updates the money held before trading (this accounts for shorting)
         dollars_before_trading = 0
