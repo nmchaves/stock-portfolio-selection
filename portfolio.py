@@ -46,11 +46,8 @@ class Portfolio(object):
 
         self.b = init_b  # b[i] = Fraction of total money allocated to stock i
         self.b_history = np.zeros((self.num_stocks, self.num_days))  # portfolio before open of each day
-        #self.b_history = []  # History of allocations over time
-        #self.dollars_cl = None  # Dollars at end of current day (after close/trades)
         self.dollars_op_history = np.zeros(self.num_days)
         self.dollars_op_history[0] = init_dollars
-        #self.dollars_op_history = [init_dollars]  # Dollars before open each day
         self.dollars_cl_history = np.zeros(self.num_days)  # Dollars before close each day
         self.last_close_price = np.NaN * np.ones(self.num_stocks)
         self.verbose = verbose
@@ -76,10 +73,6 @@ class Portfolio(object):
         self.update_allocation(cur_day, init)
         self.update_dollars(cur_day)
 
-        #new_dollars = self.calc_dollars(cur_day, init)
-        #self.dollars_cl = new_dollars
-        #self.dollars_cl_history.append(new_dollars)
-        #self.dollars_cl_history[cur_day] = new_dollars
         return
 
     def update_allocation(self, cur_day, init=False):
@@ -95,7 +88,6 @@ class Portfolio(object):
         if init and (self.b is not None):
             # b has already been initialized using initialization argument init_b
             # This may be useful for the test set where we may not want to initialize uniformly.
-            #self.b_history.append(self.b)
             self.b_history[:, day_idx+1] = self.b
             return
 
@@ -121,11 +113,11 @@ class Portfolio(object):
         """
 
         day_idx = cur_day - self.start  # DON'T use this for accessing market data (use absolute date for market data)
-        # TODO: order (aesthetics)
-        new_portfolio = self.b
-        cl = self.data.get_cl(relative=False)[cur_day, :]
+
         prev_cl = self.last_close_price
         op = self.data.get_op(relative=False)[cur_day, :]
+        cl = self.data.get_cl(relative=False)[cur_day, :]
+        new_portfolio = self.b
 
         # Get the value of our portfolio at the end of Day t before paying transaction costs
         isActive = np.isfinite(op)
@@ -184,17 +176,6 @@ class Portfolio(object):
         print 'Sharpe ratio:'
         print empirical_sharpe_ratio(self.dollars_op_history)
 
-    '''
-        def init_portfolio_uniform(self):
-        """
-        This function initializes the allocations by naively investing equal
-        amounts of money into each stock.
-        """
-        day_1_op = self.data.get_op(relative=False)[0, :]  # raw opening prices on 1st day
-        return get_uniform_allocation(self.num_stocks, day_1_op)
-    '''
-
-
 
     """
     Getters
@@ -204,43 +185,3 @@ class Portfolio(object):
 
     def get_dollars_history(self):
         return self.dollars_op_history
-
-    '''
-        def calc_dollars(self, cur_day, init=False):
-        """
-        Calculate the portfolio's wealth for the end of |cur_day| after buying/selling stocks
-        at their closing prices.
-
-        :param cur_day: Current day (0-based s.t. cur_day=0 corresponds to the 1st day)
-        :param prev_b: Allocation at the end of |cur_day|-1. If not specified, then obtain the
-        allocation from self.b_history
-        :param cur_b: Allocation at the end of |cur_day|. If not specified, then obtain the
-        allocation from self.b
-        :param cpr: Closing price relatives for the end of |cur_day|. If not specified, then
-        obtain the price relatives using self.data
-        :return: The new # of dollars held
-        """
-
-        cur_dollars = self.dollars  # Dollars before trading
-        if cur_day == 0 or init:
-            # Only buy stocks on day 0 (no selling)
-            trans_costs = self.dollars * cost_per_dollar
-            return cur_dollars - trans_costs
-        else:
-            """
-            _, trans_costs = util.rebalance(value_vec[isActive], cur_dollars,
-                                            new_portfolio[isActive])
-            return cur_dollars - trans_costs
-            """
-
-            prev_b = self.b_history[-1]
-            cur_b = self.b
-            #cpr = self.data.get_cl(relative=True)[cur_day, :]
-            cl = self.data.get_cl(relative=False)[cur_day, :]
-            prev_cl = self.data.get_cl(relative=False)[cur_day-1, :]
-            cur_op = self.data.get_op(relative=False)[cur_day, :]
-            return util.get_dollars(cur_day=cur_day, op=cur_op, cl=cl, prev_cl=prev_cl,
-                                    cur_b=cur_b, cur_dollars=self.dollars)
-            #return util.get_dollars(cur_day, cur_dollars, prev_b, cur_b, cpr)
-
-    '''

@@ -117,7 +117,7 @@ class OLMAR(Portfolio):
             if ppr > 0:
                 new_b[i] = self.b[i] + lam * (ppr - mean_price_rel)
 
-        # normalize b so that it sums to 1
+        # Normalize b so that it sums to 1
         sum_b = np.linalg.norm(new_b, ord=1)
         return (1.0 / sum_b) * new_b
 
