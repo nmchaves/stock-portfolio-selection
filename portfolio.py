@@ -16,7 +16,7 @@ class Portfolio(object):
     """
 
     def __init__(self, market_data, start=0, stop=None, rebal_interval=1, tune_interval=None, tune_length=None,
-                 init_b=None, init_dollars=init_dollars, init_dollars_hist=None, verbose=False):
+                 init_b=None, init_dollars=init_dollars, init_dollars_hist=None, verbose=False, silent=False):
         """
         :param market_data: Stock market data (MarketData object)
         :param start: What day this portfolio starts at
@@ -51,6 +51,7 @@ class Portfolio(object):
         self.dollars_cl_history = np.zeros(self.num_days)  # Dollars before close each day
         self.last_close_price = np.NaN * np.ones(self.num_stocks)
         self.verbose = verbose
+        self.silent = silent
 
     def tune_hyperparams(self, cur_day):
         # Implement this in your portfolio if you want to tune
@@ -173,8 +174,9 @@ class Portfolio(object):
             #plt.plot(self.dollars_op_history)
             #plt.show()
 
-        print 'Sharpe ratio:'
-        print empirical_sharpe_ratio(self.dollars_op_history)
+        if not self.silent:
+            print 'Sharpe ratio:'
+            print empirical_sharpe_ratio(self.dollars_op_history)
 
 
     """

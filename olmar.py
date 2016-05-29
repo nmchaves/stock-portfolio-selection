@@ -13,11 +13,11 @@ class OLMAR(Portfolio):
     Online Moving Average Reversion (OLMAR) Portfolio
 
     Introduced by Li and Hoi. "On-Line Portfolio Selection with Moving Average Reversion"
-    .617
+
     """
     def __init__(self, market_data, start=0, stop=None, window=20, eps=1.1, rebal_interval=1,
                  window_range=range(16, 26, 2), eps_range=[1.1, 1.2, 1.3, 1.4, 1.5], tune_interval=None,
-                 init_b=None, verbose=False):
+                 init_b=None, verbose=False, silent=False):
         """
 
         :param market_data: Stock market data (MarketData object)
@@ -39,8 +39,8 @@ class OLMAR(Portfolio):
         self.window_range = window_range
         self.eps_range = eps_range
 
-        super(OLMAR, self).__init__(market_data, start=start, stop=stop, rebal_interval=rebal_interval,
-                                    init_b=init_b, tune_interval=tune_interval, verbose=verbose)
+        super(OLMAR, self).__init__(market_data=market_data, start=start, stop=stop, rebal_interval=rebal_interval,
+                                    init_b=init_b, tune_interval=tune_interval, verbose=verbose, silent=silent)
 
     def predict_price_relatives(self, day):
         """
@@ -74,6 +74,8 @@ class OLMAR(Portfolio):
     def compute_lambda(self, ppr_avail, mean_ppr, avail_idxs):
         num_avail_stocks = len(ppr_avail)
         l2_norm = np.linalg.norm(ppr_avail - mean_ppr*np.ones(num_avail_stocks), ord=2)
+        if l2_norm == 0:
+            print '0'
         avail_b = np.array(self.b)[avail_idxs]  # Current allocations for available stocks
         predicted_under_eps = self.eps - np.dot(avail_b, ppr_avail)
 
@@ -142,7 +144,7 @@ class OLMAR(Portfolio):
         sharpe_ratios = []
         for (win, eps) in hyp_combos:
             cur_portfolio = OLMAR(market_data=self.data, start=start_day, stop=cur_day,
-                                init_b=init_b, window=win, eps=eps, tune_interval=None, verbose=False)
+                                init_b=init_b, window=win, eps=eps, tune_interval=None, verbose=False, silent=True)
             cur_portfolio.run(start_day, cur_day)
             cur_dollars_history = cur_portfolio.get_dollars_history()
             sharpe_ratios.append(util.empirical_sharpe_ratio(cur_dollars_history))

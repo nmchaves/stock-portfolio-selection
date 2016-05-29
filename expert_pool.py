@@ -153,7 +153,7 @@ class ExpertPool(Portfolio):
 
                 # Perform Exponential Weighting and Scale Down Older Windows
                 scale = (1.0 * self.ew_alpha)**w
-                cum_sharpes[i] += scale * exp(self.ew_eta * util.empirical_sharpe_ratio(window_dollars))
+                cum_sharpes[0, i] += scale * exp(self.ew_eta * util.empirical_sharpe_ratio(window_dollars))
                 prev_window_start = window_start
 
         # Normalize to obtain weights that sum to 1

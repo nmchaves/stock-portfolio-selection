@@ -48,7 +48,6 @@ def get_price_relatives(raw_prices):
         for (j, price) in enumerate(row):
             prev_price = prev_row[j]
             if price != 0 and prev_price != 0:
-                # TODO: check for edge cases
                 price_relatives[i+1, j] = 1.0 * price / prev_price
         prev_row = row
     return price_relatives

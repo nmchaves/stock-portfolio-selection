@@ -41,13 +41,19 @@ if __name__ == "__main__":
     print 'Number of stocks in training set: ', num_stocks
     print 'Number of days in training set: ', num_train_days
 
-    print 'No Tuning'
+    """
+    rmr = RMR(market_data=train_data, tune_interval=None, verbose=True)
+    rmr.run()
+
     olmar = OLMAR(market_data=train_data, tune_interval=None, verbose=True)
     olmar.run()
-
+    """
+    rmr2 = RMR(market_data=train_data, tune_interval=100, verbose=True)
     olmar2 = OLMAR(market_data=train_data, tune_interval=None, verbose=True)
-    pool = ExpertPool(market_data=train_data, experts=[olmar2], weighting_strategy='exp_window', windows=[5])
+    olmar3 = OLMAR(market_data=train_data, tune_interval=100, verbose=True)
+    pool = ExpertPool(market_data=train_data, experts=[olmar2, rmr2], weighting_strategy='exp_window', windows=[5])
     pool.run()
+
 
     """
     for tune_int in range(100, 10, -10):
