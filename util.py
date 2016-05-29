@@ -17,11 +17,18 @@ def load_matlab_sp500_data(file_path):
     :return: MarketData object containing stock market data.
     """
     mat = io.loadmat(file_path)
+    train_vol = np.array(mat['train_vol'])  # Volume for each stocks on each day
+    train_op = np.array(mat['train_op'])
+    train_lo = np.array(mat['train_lo'])
+    train_hi = np.array(mat['train_hi'])
+    train_cl = np.array(mat['train_cl'])
+    """
     train_vol = np.nan_to_num(np.array(mat['train_vol']))  # Volume for each stocks on each day
     train_op = np.nan_to_num(np.array(mat['train_op']))
     train_lo = np.nan_to_num(np.array(mat['train_lo']))
     train_hi = np.nan_to_num(np.array(mat['train_hi']))
     train_cl = np.nan_to_num(np.array(mat['train_cl']))
+    """
     train_stocks = [name[0] for name in np.array(mat['train_stocks'])[0]]  # Ticker names for all 497 stocks
 
     return market_data.MarketData(train_vol, train_op, train_lo, train_hi, train_cl, train_stocks)
@@ -114,21 +121,6 @@ def get_float_array_from_file(path):
         return map(float, line.split('\t'))
         break
 
-def empirical_sharpe_ratio_new(dollars):
-    """
-    Compute the empirical Sharpe Ratio:
-        x_bar = (final_dollars - init_dollars) / num_days
-        var = sqrt( (1/num_days) * (sum(x_i-mean(x_bar)))^2 )
-        Sharpe ratio = mean(x) * sqrt(num_days) / var
-
-    :param dollars: # of dollars held at the end of each day over time.
-    :return: Sharpe ratio
-    """
-
-    return_seq = np.log(dollars[1:] / dollars[:-1])
-    sharpe = np.sqrt(252) * np.mean(return_seq) / np.std(return_seq)
-    return sharpe
-
 
 def empirical_sharpe_ratio(dollars):
     """
@@ -141,12 +133,18 @@ def empirical_sharpe_ratio(dollars):
     :return: Sharpe ratio
     """
 
-    # TODO: check this, e.g. determine if dollars[0]=1 or 0.9995
+    #dollars_np = np.array(dollars).reshape(1, len(dollars))
+    return_seq = np.log(dollars[1:] / dollars[:-1])
+    sharpe = np.sqrt(252) * np.mean(return_seq) / np.std(return_seq)
+    return sharpe
+
+    """
     num_days = len(dollars)
     x = [dollars[i] - dollars[i-1] for i in range(1, num_days)]
     x_bar = np.mean(x)
     std_dev = np.std(x)
     return (1.0 * x_bar / std_dev) * sqrt(252)  # 252 is approximate # of trading days in 1 year
+    """
 
 
 def predict_prices(cur_day, market_data):
@@ -158,6 +156,7 @@ def predict_prices(cur_day, market_data):
     # Simplest baseline: Assume prices remain the same as open
     est_prs = np.nan_to_num(market_data.get_op(relative=True)[cur_day, :])
     return est_prs
+
 
 def get_dollars_ipy(op, cl, value_op, portfolio, prev_dollars):
         """
@@ -179,7 +178,7 @@ def get_dollars_ipy(op, cl, value_op, portfolio, prev_dollars):
         """
 
 
-def get_dollars(cur_day, prev_dollars, prev_b, cur_b, cpr):
+def get_dollars_old(cur_day, prev_dollars, prev_b, cur_b, cpr):
         """
         Calculate a portfolio's wealth for the end of |cur_day| after buying/selling stocks
         at their closing prices.
@@ -191,7 +190,7 @@ def get_dollars(cur_day, prev_dollars, prev_b, cur_b, cpr):
         :param cpr: Closing price relatives for the end of |cur_day|.
         :return: The new # of dollars held
         """
-
+        #  0.91070146333713753
         # TODO: check this. This updates the money held before trading (this accounts for shorting)
         dollars_before_trading = 0
         for (pb_i, cpr_i) in zip(prev_b, cpr):
@@ -275,3 +274,37 @@ def silent_divide(a,b):
     """
     with np.errstate(invalid='ignore'):
         return np.nan_to_num(np.true_divide(a, b))
+
+
+def rebalance(value_vec, value_realizable, portfolio_dst):
+    """
+    (Referenced from the course staff)
+
+    % This function simulates the process of rebalancing. The key difficulty
+    % here is to compute the transaction cost, i.e., to solve the equation
+    %
+    % sum( cost_rate * abs( portfolio_dst .* (value_realizable - C) -
+    % value_vec) ) = C
+    %
+    % where C is the total transcation cost. We use the Banach contraction
+    % theorem to solve this equation, with convergence rate cost_rate^t for
+    % t-th iteration.
+
+    % Input:
+    %%% value_vec: current values of each active stock
+    %%% value_realizable: total cash realizable value
+    %%% portfolio_dst: the desired portfolio after rebalancing
+    %%% cost_rate: ratio of transactions cost (0.0005 in our case)
+
+    % Output:
+    %%% new_value_vec: the value vector after rebalancing
+    %%% trans_cost: the total transaction cost"""
+
+    iter_num = 7
+    trans_cost = 0
+    for iter in range(iter_num):
+        trans_cost = np.sum(cost_per_dollar * np.abs(portfolio_dst * \
+                                               (value_realizable-trans_cost)-value_vec))
+
+    new_value_vec = portfolio_dst * (value_realizable - trans_cost)
+    return new_value_vec, trans_cost
