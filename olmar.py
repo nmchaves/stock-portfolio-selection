@@ -13,10 +13,10 @@ class OLMAR(Portfolio):
     Online Moving Average Reversion (OLMAR) Portfolio
 
     Introduced by Li and Hoi. "On-Line Portfolio Selection with Moving Average Reversion"
-
+    .617
     """
-    def __init__(self, market_data, start=0, stop=None, window=10, eps=2, rebal_interval=1,
-                 window_range=range(3, 7), eps_range=[1.1, 1.3, 1.7, 2], tune_interval=None,
+    def __init__(self, market_data, start=0, stop=None, window=20, eps=1.1, rebal_interval=1,
+                 window_range=range(16, 26, 2), eps_range=[1.1, 1.2, 1.3, 1.4, 1.5], tune_interval=None,
                  init_b=None, verbose=False):
         """
 
@@ -131,13 +131,12 @@ class OLMAR(Portfolio):
         else:
             # Not worth tuning yet
             return
-            #start_day = 0
-            #tune_duration = cur_day
 
         hyperparam_space = [self.window_range, self.eps_range]
         hyp_combos = list(itertools.product(*hyperparam_space))
 
-        init_b = self.b_history[-tune_duration]  # Allocation used at beginning of tuning period
+        #init_b = self.b_history[-tune_duration]  # Allocation used at beginning of tuning period
+        init_b = None
 
         # Compute sharpe ratios for each setting of hyperparams
         sharpe_ratios = []
@@ -154,9 +153,10 @@ class OLMAR(Portfolio):
         return
 
     def print_results(self):
-        print 30 * '-'
-        print 'Performance for OLMAR:'
-        print 30 * '-'
+        if self.verbose:
+            print 30 * '-'
+            print 'Performance for OLMAR:'
+            print 30 * '-'
         Portfolio.print_results(self)
 
     def save_results(self):

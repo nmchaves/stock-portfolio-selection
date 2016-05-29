@@ -42,7 +42,7 @@ if __name__ == "__main__":
     print 'Number of days in training set: ', num_train_days
 
     print 'No Tuning'
-    olmar = OLMAR(market_data=train_data, tune_interval=None, verbose=True)
+    olmar = OLMAR(market_data=train_data, tune_interval=10, verbose=True)
     olmar.run()
     """
     for tune_int in range(100, 10, -10):

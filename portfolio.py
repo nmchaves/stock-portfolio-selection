@@ -3,6 +3,7 @@ from util import get_uniform_allocation, empirical_sharpe_ratio
 from constants import init_dollars, cost_per_dollar
 from market_data import MarketData
 import numpy as np
+import matplotlib.pyplot as plt
 
 # TODO: tune distance
 
@@ -69,7 +70,7 @@ class Portfolio(object):
 
         # Check if we need to tune hyperparameters today
         if self.tune_interval:
-            if cur_day > 0 and cur_day % self.tune_interval == 0:
+            if cur_day > self.start and cur_day % self.tune_interval == 0:
                 self.tune_hyperparams(cur_day)
 
         self.update_allocation(cur_day, init)
@@ -89,11 +90,13 @@ class Portfolio(object):
         :return:
         """
 
+        day_idx = cur_day - self.start
+
         if init and (self.b is not None):
             # b has already been initialized using initialization argument init_b
             # This may be useful for the test set where we may not want to initialize uniformly.
             #self.b_history.append(self.b)
-            self.b_history[:, cur_day+1] = self.b
+            self.b_history[:, day_idx+1] = self.b
             return
 
         if (cur_day % self.rebal_interval) != 0:
@@ -102,10 +105,6 @@ class Portfolio(object):
             return
 
         self.b = self.get_new_allocation(cur_day, init)
-
-        #if cur_day <= self.num_days-2:
-        #    self.b_history[:, cur_day+1] = self.b
-        #self.b_history.append(self.b)
         return
 
     def get_new_allocation(self, cur_day, init=False):
@@ -121,40 +120,35 @@ class Portfolio(object):
         :return:
         """
 
+        day_idx = cur_day - self.start  # DON'T use this for accessing market data (use absolute date for market data)
+        # TODO: order (aesthetics)
         new_portfolio = self.b
         cl = self.data.get_cl(relative=False)[cur_day, :]
         prev_cl = self.last_close_price
-        """
-        if cur_day > 0:
-            prev_cl = self.data.get_cl(relative=False)[cur_day-1, :]
-        else:
-            prev_cl = np.NaN * np.ones(self.num_stocks)
-        """
         op = self.data.get_op(relative=False)[cur_day, :]
 
         # Get the value of our portfolio at the end of Day t before paying transaction costs
         isActive = np.isfinite(op)
-        value_vec = self.dollars_op_history[cur_day] * self.b_history[:, cur_day]
+        value_vec = self.dollars_op_history[day_idx] * self.b_history[:, day_idx]
         growth = cl[isActive] / prev_cl[isActive]-1
         growth[np.isnan(growth)] = 0
         revenue_vec = value_vec[isActive] * growth
         value_vec[isActive] = value_vec[isActive] + revenue_vec
-        self.dollars_cl_history[cur_day] = self.dollars_op_history[cur_day] + np.sum(revenue_vec)
+        self.dollars_cl_history[day_idx] = self.dollars_op_history[day_idx] + np.sum(revenue_vec)
 
         # At the end of Day t, we use the close price of day t to adjust our
         # portfolio to the desired percentage.
-        if cur_day <= self.num_days-2:
+        if day_idx <= self.num_days-2:
             nonActive = np.logical_not(isActive)
-            value_realizable = self.dollars_cl_history[cur_day] - np.sum(value_vec[nonActive])
+            value_realizable = self.dollars_cl_history[day_idx] - np.sum(value_vec[nonActive])
             new_value_vec, trans_cost = util.rebalance(value_vec[isActive], value_realizable,
                                                        new_portfolio[isActive])
 
-            self.dollars_op_history[cur_day+1] = self.dollars_cl_history[cur_day] - trans_cost
+            self.dollars_op_history[day_idx+1] = self.dollars_cl_history[day_idx] - trans_cost
             value_vec[isActive] = new_value_vec
-            self.b_history[:, cur_day+1] = value_vec / self.dollars_op_history[cur_day+1]
+            self.b_history[:, day_idx+1] = value_vec / self.dollars_op_history[day_idx+1]
 
         self.last_close_price[isActive] = cl[isActive]
-
         return
 
     def run(self, start=None, stop=None):
@@ -184,7 +178,7 @@ class Portfolio(object):
         if self.verbose:
             print 'Total dollar value of assets over time:'
             print self.dollars_op_history
-            #plt.plot(self.dollars_history)
+            #plt.plot(self.dollars_op_history)
             #plt.show()
 
         print 'Sharpe ratio:'
