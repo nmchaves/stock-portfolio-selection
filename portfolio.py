@@ -47,11 +47,6 @@ class Portfolio(object):
         self.dollars_history = [self.dollars]
         self.verbose = verbose
 
-    """
-    def run(self, start, end):
-        raise 'run is an abstract method, so it must be implemented by the child class!'
-    """
-
     def tune_hyperparams(self, cur_day):
         # Implement this in your portfolio if you want to tune
         raise 'tune_hyperparams is an abstract method, so it must be implemented by the child class!'
@@ -85,11 +80,9 @@ class Portfolio(object):
         :return:
         """
 
-        if self.b is not None:
-            self.b_history.append(self.b)
-
         if init and (self.b is not None):
             # b has already been initialized using initialization argument init_b
+            self.b_history.append(self.b)
             return
 
         if self.rebal_interval and (cur_day % self.rebal_interval) != 0:
@@ -98,6 +91,7 @@ class Portfolio(object):
             return
 
         self.b = self.get_new_allocation(cur_day, init)
+        self.b_history.append(self.b)
 
     def get_new_allocation(self, cur_day, init=False):
         raise 'get_new_allocation is an abstract method, so it must be implemented by the child class!'
@@ -124,14 +118,7 @@ class Portfolio(object):
         obtain the price relatives using self.data
         :return: The new # of dollars held
         """
-        '''
-        if cpr is None:
-            cpr = self.data.get_cl(relative=True)[cur_day, :]  # closing price relatives
-        if cur_b is None:
-            cur_b = self.b
-        if prev_b is None and cur_day > 0:
-            prev_b = self.b_history[cur_day-1]
-        '''
+
         cur_dollars = self.dollars
         if cur_day == 0 or init:
             # Only buy stocks on day 0 (no selling)
@@ -143,26 +130,6 @@ class Portfolio(object):
             prev_b = self.b_history[-1]
             return util.get_dollars(cur_day, cur_dollars, prev_b, cur_b, cpr)
 
-    '''
-    def predict_performance(self, cur_day, est_cl):
-        """
-        Predict performance of this portfolio assuming that the closing price relatives
-        on |cur_day| are |est_cl|.
-
-        :pre: update_allocation has already been called for |cur_day|
-        :return: # of dollars that would be made (per dollar of investment) using this
-        portfolio if the true closing price relatives on |cur_day| were |est_cl|
-        """
-
-        if cur_day == 0:
-            # TODO: handle this case better. all portfolios will have same performance on day 0
-            # so might as well just return a constant
-            return 1
-        prev_b = self.b_history[cur_day-1]
-        # TODO: case when this portfolio has no money
-        est_perf = (1.0 / self.dollars) * self.calc_dollars(cur_day, prev_b=prev_b, cur_b=self.b, cpr=est_cl)
-        return est_perf
-    '''
 
     def run(self, start=None, stop=None):
         """
@@ -184,18 +151,19 @@ class Portfolio(object):
                 init = False
             self.update(day, init)
 
-        if self.verbose:
-            self.print_results()
-            print np.array(self.b_history).shape
+        self.print_results()
         #self.save_results()
 
     def print_results(self):
-        print 'Total dollar value of assets over time:'
-        print self.dollars_history
+        if self.verbose:
+            print 'Total dollar value of assets over time:'
+            print self.dollars_history
+            #plt.plot(self.dollars_history)
+            #plt.show()
+
         print 'Sharpe ratio:'
         print empirical_sharpe_ratio(self.dollars_history)
-        #plt.plot(self.dollars_hist)
-        #plt.show()
+
 
     """
     Getters
