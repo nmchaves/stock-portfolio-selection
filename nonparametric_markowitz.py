@@ -2,19 +2,22 @@ import util
 from portfolio import Portfolio
 from constants import init_dollars, cost_per_dollar
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from cvxpy import *
 import pdb
 
 class NonParametricMarkowitz(Portfolio):
-    def __init__(self, market_data, window_len, k, risk_aversion, start_date, portfolio_cap=0.10):
+    def __init__(self, market_data, window_len, k, risk_aversion, start_date, portfolio_cap = 1.0):
         self.window_len = window_len
         self.k = k
         self.risk_aversion = risk_aversion
         self.start_date = start_date
         self.mu = None 
         self.sigma = None
-        self.cap = portfolio_cap
+	self.predicted_return = None
+        self.ma_window = 15
+	#self.cap = portfolio_cap
+	#self.filt = np.asarray([-0.0902,0.1282,-0.1313,0.1531,-0.1554,0.2239,-0.1965,0.1735,-0.1749,0.0556,0.0618,-0.1465,0.2183,-0.2497,1.1316])
         super(NonParametricMarkowitz,self).__init__(market_data)
 
     def get_market_window(self, window, day):
@@ -29,7 +32,7 @@ class NonParametricMarkowitz(Portfolio):
         history = np.concatenate((op, hi, lo, cl)).T
         return history
 
-    def get_new_allocation(self, cur_day):
+    def get_new_allocation(self, cur_day, init=False):
         """
 
         :param cur_day:
@@ -39,6 +42,8 @@ class NonParametricMarkowitz(Portfolio):
         If we haven't reached the start date (the day when we have confidence in our mean/covariance info), return 
         a uniform portfolio. Otherwise, perform nonparametric markowitz.
         """
+
+        self.update_statistics(cur_day)
 
         if cur_day == 0:
             cur_day_op = self.data.get_op(relative=False)[cur_day, :]  # opening prices on |cur_day|
@@ -61,32 +66,31 @@ class NonParametricMarkowitz(Portfolio):
                 stock = history[i,:]
                 neighbors[i,:] = util.k_nearest_neighbors(stock, history, k, history_norms)
         
-            # Solve optimization problem 
+            # Solve optimization problem
             l = self.risk_aversion
             neighbors = neighbors.astype(int)
             b = Variable(num_available)
             c = Variable(num_available)
 
-            if(cur_day == 100):
-                pdb.set_trace()
-
             d = 0
-            e = 0
             for i in range(num_available):
                 inds = available_inds[neighbors[i,:]]
-                m_i = self.mu[inds]
+                m_i = self.mu[inds] #np.ones(inds.shape[0])
                 S_i = self.sigma[inds,:]
                 S_i = S_i[:,inds]
-                d += (b[i]*m_i).T*np.ones(k) 
-                e += quad_form(b[i]*np.ones(k), S_i)
-                    
-                constraints = [c>= b, c >= -b, sum_entries(c)==1, b <= self.cap, b >= -self.cap] #[b >= 0, np.ones(num_available).T*b == 1]
-                objective = Maximize(d-l*e)
-                prob = Problem(objective, constraints)
-                prob.solve()
 
-                new_allocation = np.zeros(len(available))
-                new_allocation[available_inds] = b.value
+                if i == 265:
+                    pdb.set_trace()
+
+                d += -(b[i]*m_i).T*np.ones(k) + l*quad_form(b[i]*np.ones(k), S_i) #+ 0.00005*norm(b-b_last,2) #0.00005
+                
+            constraints = [c>= b, c >= -b, sum_entries(c)==1]	#, b <= self.cap, b>= - self.cap] #[b >= 0, np.ones(num_available).T*b == 1]
+            objective = Minimize(d)
+            prob = Problem(objective, constraints)
+            prob.solve()
+
+            new_allocation = np.zeros(len(available))
+            new_allocation[available_inds] = b.value
 
         return new_allocation
 
@@ -113,20 +117,33 @@ class NonParametricMarkowitz(Portfolio):
             N = num_examples-1
             mu_N = self.mu
             self.mu = N/(N+1.0) * self.mu + 1/(N+1.0) * last_close
+	    '''
+	    # Use a simple moving average filter to estimate today's closing price
+            if(cur_day > self.ma_window):
+                window = np.arange(cur_day-self.ma_window, cur_day)
+                self.predicted_return = 1.0/self.ma_window * np.sum(self.data.get_cl()[window,:], axis=0)
+	    '''
+	    # Try predictive filtering
+	    #if(cur_day > self.ma_window):
+            #    window = np.arange(cur_day-self.ma_window, cur_day)
+	#	pdb.set_trace()
+	#	self.predicted_return = self.data.get_cl()[window,:] * self.filt
+
+	    # During initialization, estimate cov as diagonal; oth., estimate full cov.
             if(cur_day >= self.start_date):   
                 self.sigma = N/(N+1.0) * (self.sigma+np.outer(mu_N, mu_N)) - np.outer(self.mu, self.mu) + 1/(N+1.0)*np.outer(last_close, last_close)
             else:
                 self.sigma = N/(N+1.0) * (self.sigma + np.diag(mu_N**2)) - np.diag(self.mu**2) + 1/(N+1.0)*np.diag(last_close**2)
 
-    def run(self):
-        for day in range(0, self.num_days):
-            if(day % 100 == 0):
-                print 'Day' + str(day)
-            self.update_statistics(day)
-            self.update(day)
-
-        self.print_results()
-        #self.save_results()
+ #    def run(self):
+ #        for day in range(0, self.num_days):
+ #            if(day % 100 == 0):
+ #                print 'Day' + str(day)
+ #            self.update_statistics(day)
+ #            self.update(day)
+	# pdb.set_trace()
+ #        self.print_results()
+ #        #self.save_results()
 
     def print_results(self):
         print 30 * '-'
