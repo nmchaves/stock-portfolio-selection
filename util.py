@@ -114,6 +114,21 @@ def get_float_array_from_file(path):
         return map(float, line.split('\t'))
         break
 
+def empirical_sharpe_ratio_new(dollars):
+    """
+    Compute the empirical Sharpe Ratio:
+        x_bar = (final_dollars - init_dollars) / num_days
+        var = sqrt( (1/num_days) * (sum(x_i-mean(x_bar)))^2 )
+        Sharpe ratio = mean(x) * sqrt(num_days) / var
+
+    :param dollars: # of dollars held at the end of each day over time.
+    :return: Sharpe ratio
+    """
+
+    return_seq = np.log(dollars[1:] / dollars[:-1])
+    sharpe = np.sqrt(252) * np.mean(return_seq) / np.std(return_seq)
+    return sharpe
+
 
 def empirical_sharpe_ratio(dollars):
     """

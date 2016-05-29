@@ -2,7 +2,7 @@ import util
 from util import get_uniform_allocation, empirical_sharpe_ratio
 from constants import init_dollars, cost_per_dollar
 from market_data import MarketData
-
+import numpy as np
 
 class Portfolio(object):
     """
@@ -42,7 +42,7 @@ class Portfolio(object):
         self.tune_interval = tune_interval  # How often to tune hyperparams (if at all)
 
         self.b = init_b  # b[i] = Fraction of total money allocated to stock i
-        self.b_history = [init_b]  # History of allocations over time
+        self.b_history = []  # History of allocations over time
         self.dollars = init_dollars
         self.dollars_history = [self.dollars]
         self.verbose = verbose
@@ -84,12 +84,13 @@ class Portfolio(object):
         :param init: If True, this portfolio is being initialized today.
         :return:
         """
+
+        if self.b is not None:
+            self.b_history.append(self.b)
+
         if init and (self.b is not None):
             # b has already been initialized using initialization argument init_b
             return
-
-        if cur_day != 0 and not init:
-            self.b_history.append(self.b)
 
         if self.rebal_interval and (cur_day % self.rebal_interval) != 0:
             # Don't make any trades today (avoid transaction costs)
@@ -185,6 +186,7 @@ class Portfolio(object):
 
         if self.verbose:
             self.print_results()
+            print np.array(self.b_history).shape
         #self.save_results()
 
     def print_results(self):

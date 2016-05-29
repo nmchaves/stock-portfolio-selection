@@ -74,10 +74,10 @@ if __name__ == "__main__":
     pool.run()
     """
 
-
+    """
     ucrp = UniformConstantRebalancedPortfolio(market_data=train_data)
     ucrp.run()
-    """
+
     ubah = UniformBuyAndHoldPortfolio(market_data=train_data)
     ubah.run()
 
