@@ -22,7 +22,7 @@ class ExpertPool(Portfolio):
     def __init__(self, market_data, experts, start=0, stop=None, init_weights=None,
                  rebal_interval=1, tune_interval=None,
                  init_b=None, init_dollars=init_dollars, init_dollars_hist=None,
-                 weighting_strategy='exp_window', windows=[10], ew_alpha=0.5, ew_eta = 1):
+                 weighting_strategy='exp_window', windows=[10], ew_alpha=0.5, ew_eta = 1, saved_results=None):
 
         if not isinstance(market_data, MarketData):
             raise 'market_data input to ExpertPool constructor must be a MarketData object.'
@@ -61,6 +61,8 @@ class ExpertPool(Portfolio):
         self.ew_alpha = ew_alpha
         self.ew_eta = ew_eta
 
+        self.saved_results = saved_results
+
         super(ExpertPool, self).__init__(market_data, start=start, stop=stop,
                                          rebal_interval=rebal_interval, tune_interval=tune_interval)
 
@@ -74,8 +76,9 @@ class ExpertPool(Portfolio):
         return np.true_divide(net_b, sum_b)
 
     def get_new_allocation(self, cur_day, init=False):
-        if cur_day < 2:
+        if cur_day < 3:
             # Use uniform weights for all experts, since we have limited info
+            # (Need at least 3 days of history to define sharpe ratio)
             weights = (1.0 / self.num_experts) * np.ones(self.num_experts)
         else:
             if self.weighting_strategy == 'open_price':
@@ -83,7 +86,11 @@ class ExpertPool(Portfolio):
             elif self.weighting_strategy == 'ma_perf':
                 weights = self.ma_performance_weighting(cur_day)
             elif self.weighting_strategy == 'exp_window':
-                weights = self.recent_sharpe_weighting(cur_day)
+                len_history = cur_day - self.start
+                experts_dollars_history = np.zeros(shape=(self.num_experts, len_history))
+                for i, expert in enumerate(self.experts):
+                    experts_dollars_history[i, :] = expert.get_dollars_history()[0:cur_day]
+                weights = self.recent_sharpe_weighting(cur_day, experts_dollars_history)
 
         # Update the individual experts
         for expert in self.experts:
@@ -112,7 +119,7 @@ class ExpertPool(Portfolio):
         weights = np.multiply((1.0 / sum(preds)), preds)
         return weights
 
-    def recent_sharpe_weighting(self, cur_day):
+    def recent_sharpe_weighting(self, cur_day, experts_dollars_history=None):
         """
         Compute weights of experts based on:
         (1/2)*exp(eta * SR_w1) + (/2)^2 * exp(eta * SR_w2) + ...
@@ -121,6 +128,8 @@ class ExpertPool(Portfolio):
         :param cur_day:
         :return:
         """
+
+        num_experts = experts_dollars_history.shape[0]
 
         windows = self.windows
         len_windows = sum(windows)
@@ -139,14 +148,13 @@ class ExpertPool(Portfolio):
             else:
                 windows = [cur_day]
 
-        cum_sharpes = np.zeros(shape=(1, self.num_experts))  # sharpe ratios of each expert (summed over each window)
-        for i, expert in enumerate(self.experts):
-            dollars_history = expert.get_dollars_history()
+        cum_sharpes = np.zeros(shape=(1, num_experts))  # sharpe ratios of each expert (summed over each window)
+        for i, dollars_history in enumerate(experts_dollars_history):
             prev_window_start = 0
             for (w, window) in enumerate(windows):
                 window_start = cur_day - (window + prev_window_start)
                 if w == 0:
-                    window_stop = cur_day + 1
+                    window_stop = cur_day
                 else:
                     window_stop = prev_window_start
                 window_dollars = dollars_history[window_start:window_stop]
@@ -194,3 +202,14 @@ class ExpertPool(Portfolio):
         print 30 * '-'
         print 'Weighting strategy: ', self.weighting_strategy
         Portfolio.print_results(self)
+
+    def run(self, start=None, stop=None):
+        if self.saved_results:
+            for day in range(start, stop):
+                # Note: saved_results should be an np array of dimension num stocks x num days to use
+                weights = self.recent_sharpe_weighting(cur_day=day, experts_dollars_history=self.saved_results)
+
+                # TODO: use weights to get dollars history (see self.aggregate experts)
+        else:
+            Portfolio.run(self, start, stop)
+

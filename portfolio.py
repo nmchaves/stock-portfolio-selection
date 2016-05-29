@@ -3,7 +3,6 @@ from util import get_uniform_allocation, empirical_sharpe_ratio
 from constants import init_dollars, cost_per_dollar
 from market_data import MarketData
 import numpy as np
-import matplotlib.pyplot as plt
 
 # TODO: tune distance
 

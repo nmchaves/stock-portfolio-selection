@@ -16,17 +16,6 @@ from rmr import RMR
 
 
 """
-TODO:
-fix handling of negative b's
-look into explicitly shorting
-tuning parameters, CV. especially for RMR
-
-ARIMA for predicting performance
-
-cross-validation for hyperparameters (e.g. window size)
-
-"""
-"""
 *********************
         Main
 *********************
@@ -42,16 +31,22 @@ if __name__ == "__main__":
     print 'Number of days in training set: ', num_train_days
 
     """
-    rmr = RMR(market_data=train_data, tune_interval=None, verbose=True)
-    rmr.run()
-
     olmar = OLMAR(market_data=train_data, tune_interval=None, verbose=True)
     olmar.run()
+    olmar2 = OLMAR(market_data=train_data, tune_interval=10, verbose=True)
+    olmar2.run()
     """
+    #rmr = RMR(market_data=train_data, tune_interval=None, verbose=True)
+    #rmr.run()
+    """
+    olmar = OLMAR(market_data=train_data, tune_interval=None, verbose=True)
+    olmar.run()
+
     rmr2 = RMR(market_data=train_data, tune_interval=100, verbose=True)
+    """
     olmar2 = OLMAR(market_data=train_data, tune_interval=None, verbose=True)
-    olmar3 = OLMAR(market_data=train_data, tune_interval=100, verbose=True)
-    pool = ExpertPool(market_data=train_data, experts=[olmar2, rmr2], weighting_strategy='exp_window', windows=[5])
+    olmar3 = OLMAR(market_data=train_data, tune_interval=20, verbose=True)
+    pool = ExpertPool(market_data=train_data, experts=[olmar2, olmar3], weighting_strategy='exp_window', windows=[5])
     pool.run()
 
 
