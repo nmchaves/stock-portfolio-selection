@@ -16,7 +16,7 @@ class OLMAR(Portfolio):
 
     """
     def __init__(self, market_data, start=0, stop=None, window=5, eps=2, rebal_interval=1,
-                 window_range=None, eps_range=None, tune_interval=None):
+                 window_range=None, eps_range=None, tune_interval=None, init_b=None, verbose=False):
         """
 
         :param market_data: Stock market data (MarketData object)
@@ -43,7 +43,8 @@ class OLMAR(Portfolio):
         else:
             self.eps_range = [1.1, 1.3, 1.7, 2]
 
-        super(OLMAR, self).__init__(market_data, start=start, stop=stop, rebal_interval=rebal_interval, tune_interval=tune_interval)
+        super(OLMAR, self).__init__(market_data, start=start, stop=stop, rebal_interval=rebal_interval,
+                                    init_b=init_b, tune_interval=tune_interval, verbose=verbose)
 
     def predict_price_relatives(self, day):
         """
@@ -127,21 +128,6 @@ class OLMAR(Portfolio):
         sum_b = np.linalg.norm(new_b, ord=1)
         return (1.0 / sum_b) * new_b
 
-    def run(self):
-
-        start = self.start
-        stop = self.stop
-
-        for day in range(start, stop):
-            if day == start:
-                init = True
-            else:
-                init = False
-            self.update(day, init)
-
-        self.print_results()
-        #self.save_results()
-
     def print_results(self):
         print 30 * '-'
         print 'Performance for OLMAR:'
@@ -156,18 +142,25 @@ class OLMAR(Portfolio):
         # Create new instances of this portfolio with various hyperparameter settings
         # to find the best constant hyperparameters in hindsight
 
+        tune_duration = 20
+        if cur_day >= tune_duration:
+            start_day = cur_day - tune_duration
+        else:
+            # Not worth tuning yet
+            return
+            #start_day = 0
+            #tune_duration = cur_day
+
         hyperparam_space = [self.window_range, self.eps_range]
         hyp_combos = list(itertools.product(*hyperparam_space))
 
-        if cur_day >= 20:
-            start_day = cur_day - 20
-        else:
-            start_day = 0
+        init_b = self.b_history[-tune_duration]  # Allocation used at beginning of tuning period
 
         # Compute sharpe ratios for each setting of hyperparams
         sharpe_ratios = []
         for (win, eps) in hyp_combos:
-            cur_portfolio = OLMAR(market_data=self.data, window=win, eps=eps, tune_interval=None)
+            cur_portfolio = OLMAR(market_data=self.data, start=start_day, stop=cur_day,
+                                init_b=init_b, window=win, eps=eps, tune_interval=None, verbose=False)
             cur_portfolio.run(start_day, cur_day)
             cur_dollars_history = cur_portfolio.get_dollars_history()
             sharpe_ratios.append(util.empirical_sharpe_ratio(cur_dollars_history))

@@ -41,9 +41,16 @@ if __name__ == "__main__":
     print 'Number of stocks in training set: ', num_stocks
     print 'Number of days in training set: ', num_train_days
 
-    olmar = OLMAR(market_data=train_data, tune_interval=None)
+    print 'No Tuning'
+    olmar = OLMAR(market_data=train_data, tune_interval=None, verbose=True)
     olmar.run()
-
+    """
+    for tune_int in range(100, 10, -10):
+        print 'Tuning every ', str(tune_int), ' days'
+        olmar = OLMAR(market_data=train_data, tune_interval=tune_int, verbose=True)
+        olmar.run()
+    """
+    """
     # Expert Pooling using Exponential Window Performance
     rmr3 = RMR(market_data=train_data)
     olmar3 = OLMAR(market_data=train_data)
@@ -51,6 +58,7 @@ if __name__ == "__main__":
     #ubah3 = UniformBuyAndHoldPortfolio(market_data=train_data)
     pool = ExpertPool(market_data=train_data, experts=[rmr3, olmar3], weighting_strategy='exp_window', windows=[5])
     pool.run()
+    """
 
     """
     rmr = RMR(market_data=train_data)
@@ -66,10 +74,10 @@ if __name__ == "__main__":
     pool.run()
     """
 
-    """
+
     ucrp = UniformConstantRebalancedPortfolio(market_data=train_data)
     ucrp.run()
-
+    """
     ubah = UniformBuyAndHoldPortfolio(market_data=train_data)
     ubah.run()
 
