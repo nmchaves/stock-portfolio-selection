@@ -3,8 +3,7 @@ from util import get_uniform_allocation, empirical_sharpe_ratio
 from constants import init_dollars, cost_per_dollar
 from market_data import MarketData
 import numpy as np
-
-# TODO: tune distance
+#import matplotlib.pyplot as plt
 
 class Portfolio(object):
     """
@@ -169,7 +168,7 @@ class Portfolio(object):
     def print_results(self):
         if self.verbose:
             print 'Total dollar value of assets over time:'
-            print self.dollars_op_history
+            print self.dollars_op_history[0:30]
             #plt.plot(self.dollars_op_history)
             #plt.show()
 
