@@ -23,7 +23,7 @@ class ExpertPool(Portfolio):
     def __init__(self, market_data, experts, start=0, stop=None, init_weights=None,
                  rebal_interval=1, tune_interval=None,
                  init_b=None, init_dollars=init_dollars, init_dollars_hist=None,
-                 weighting_strategy='exp_window', windows=[10], ew_alpha=0.5, ew_eta = 1, saved_results=False, saved_b = None, dollars_hist=None):
+                 weighting_strategy='exp_window', windows=[10], ew_alpha=0.5, ew_eta = 0.1, saved_results=False, saved_b = None, dollars_hist=None):
 
         if not isinstance(market_data, MarketData):
             raise 'market_data input to ExpertPool constructor must be a MarketData object.'
@@ -207,6 +207,7 @@ class ExpertPool(Portfolio):
         Portfolio.print_results(self)
 
     def run(self, start=None, stop=None):
+        init = True
         if start is None:
             start = self.start
         if stop is None:
@@ -219,20 +220,25 @@ class ExpertPool(Portfolio):
             weights = None
             for day in range(start, stop):
                 # Note: saved_results should be an np array of dimension num stocks x num days to use
-                b = portfolios[:,:,day]
-                if(day > 3):
-                    weights = self.recent_sharpe_weighting(cur_day=day, experts_dollars_history=dollars_history)
+                if(day == 0):
+                    cur_day_op = self.data.get_op(relative=False)[day, :]  # opening prices on |cur_day|
+                    self.b = util.get_uniform_allocation(self.num_stocks, cur_day_op)
                 else:
-                    weights = (1.0 / self.num_experts) * np.ones(self.num_experts)
-                net_b = np.zeros(self.num_stocks)
-                for i,experts in enumerate(self.experts):
-                    net_b += np.multiply(weights[i], b[i,:])
+                    b = portfolios[:,:,day]
+                    if(day > 3):
+                        weights = self.recent_sharpe_weighting(cur_day=day, experts_dollars_history=dollars_history)
+                    else:
+                        weights = (1.0 / self.num_experts) * np.ones(self.num_experts)
+                    net_b = np.zeros(self.num_stocks)
+                    for i,experts in enumerate(self.experts):
+                        net_b += np.multiply(weights[i], b[i,:])
 
-                sum_b = 1.0 * np.linalg.norm(net_b, ord=1)
-                self.b = np.true_divide(net_b, sum_b)
+                    sum_b = 1.0 * np.linalg.norm(net_b, ord=1)
+                    self.b = np.true_divide(net_b, sum_b)
 
                 self.update_dollars(day)
-                pdb.set_trace()
+            self.print_results()
+            
         else:
             Portfolio.run(self, start, stop)
 

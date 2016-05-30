@@ -65,7 +65,6 @@ if __name__ == "__main__":
 
     pool = ExpertPool(market_data=train_data, experts=[olmar2, npm], weighting_strategy='exp_window', ew_eta=0.1, windows=[10], saved_results=True, saved_b = b_hist, dollars_hist=dollars_history)
     pool.run()
-    pdb.set_trace()
 
     """
     for tune_int in range(100, 10, -10):
