@@ -5,6 +5,7 @@ from market_data import MarketData
 import numpy as np
 import util
 from math import exp
+import pdb
 
 # TODO: enable one to specify an initial weight distribution (eg one might believe some portfolios
 # will be better than others)
@@ -22,7 +23,7 @@ class ExpertPool(Portfolio):
     def __init__(self, market_data, experts, start=0, stop=None, init_weights=None,
                  rebal_interval=1, tune_interval=None,
                  init_b=None, init_dollars=init_dollars, init_dollars_hist=None,
-                 weighting_strategy='exp_window', windows=[10], ew_alpha=0.5, ew_eta = 1, saved_results=None):
+                 weighting_strategy='exp_window', windows=[10], ew_alpha=0.5, ew_eta = 1, saved_results=False, saved_b = None, dollars_hist=None):
 
         if not isinstance(market_data, MarketData):
             raise 'market_data input to ExpertPool constructor must be a MarketData object.'
@@ -62,6 +63,8 @@ class ExpertPool(Portfolio):
         self.ew_eta = ew_eta
 
         self.saved_results = saved_results
+        self.saved_b = saved_b
+        self.saved_dollars = dollars_hist
 
         super(ExpertPool, self).__init__(market_data, start=start, stop=stop,
                                          rebal_interval=rebal_interval, tune_interval=tune_interval)
@@ -119,7 +122,7 @@ class ExpertPool(Portfolio):
         weights = np.multiply((1.0 / sum(preds)), preds)
         return weights
 
-    def recent_sharpe_weighting(self, cur_day, experts_dollars_history=None):
+    def recent_sharpe_weighting(self, cur_day, experts_dollars_history):
         """
         Compute weights of experts based on:
         (1/2)*exp(eta * SR_w1) + (/2)^2 * exp(eta * SR_w2) + ...
@@ -165,7 +168,7 @@ class ExpertPool(Portfolio):
                 prev_window_start = window_start
 
         # Normalize to obtain weights that sum to 1
-        weights = (1.0 / sum(cum_sharpes)) * cum_sharpes
+        weights = (1.0 / np.sum(cum_sharpes)) * cum_sharpes
         return weights[0]  # return the array as a single row
 
     def ma_performance_weighting(self, cur_day):
@@ -204,12 +207,32 @@ class ExpertPool(Portfolio):
         Portfolio.print_results(self)
 
     def run(self, start=None, stop=None):
+        if start is None:
+            start = self.start
+        if stop is None:
+            stop = self.stop
+
         if self.saved_results:
+            portfolios = self.saved_b
+            dollars_history = self.saved_dollars
+
+            weights = None
             for day in range(start, stop):
                 # Note: saved_results should be an np array of dimension num stocks x num days to use
-                weights = self.recent_sharpe_weighting(cur_day=day, experts_dollars_history=self.saved_results)
+                b = portfolios[:,:,day]
+                if(day > 3):
+                    weights = self.recent_sharpe_weighting(cur_day=day, experts_dollars_history=dollars_history)
+                else:
+                    weights = (1.0 / self.num_experts) * np.ones(self.num_experts)
+                net_b = np.zeros(self.num_stocks)
+                for i,experts in enumerate(self.experts):
+                    net_b += np.multiply(weights[i], b[i,:])
 
-                # TODO: use weights to get dollars history (see self.aggregate experts)
+                sum_b = 1.0 * np.linalg.norm(net_b, ord=1)
+                self.b = np.true_divide(net_b, sum_b)
+
+                self.update_dollars(day)
+                pdb.set_trace()
         else:
             Portfolio.run(self, start, stop)
 
