@@ -186,20 +186,3 @@ class OLMAR(Portfolio):
             'Epsilon': str(self.eps)
         }
         util.save_hyperparams(save_dir=save_dir, hyperparams_dict=hyperparams, portfolio_type='OLMAR')
-
-    def load_previous_hyperparams(self, past_results_dir):
-
-        hyperparams_dict = util.load_hyperparams(past_results_dir=past_results_dir)
-
-        if 'Window' in hyperparams_dict and 'Epsilon' in hyperparams_dict:
-            window = int(hyperparams_dict['Window'])
-            eps = hyperparams_dict['Epsilon']
-        else:
-            raise Exception('Missing hyperparameter for results file in ' + past_results_dir)
-        return window, eps
-
-
-
-
-
-

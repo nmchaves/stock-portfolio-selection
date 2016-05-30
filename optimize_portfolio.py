@@ -38,10 +38,10 @@ if __name__ == "__main__":
     olmar = OLMAR(market_data=train_data, tune_interval=None, verbose=True)
     olmar.run()
     """
-    olmar2 = OLMAR(market_data=train_data, tune_interval=200, verbose=True, past_results_dir='train_results/OLMAR/')
+    olmar2 = OLMAR(market_data=train_data, tune_interval=10, verbose=True, past_results_dir='train_results/OLMAR/')
     olmar2.run()
-    #olmar2 = OLMAR(market_data=train_data, tune_interval=10, verbose=True, new_results_dir='train_results/OLMAR/')
-    #olmar2.run()
+    olmar = OLMAR(market_data=train_data, tune_interval=10, verbose=True, new_results_dir='train_results/OLMAR/')
+    olmar.run()
     #rmr = RMR(market_data=train_data, tune_interval=200, verbose=True, new_results_dir='train_results/RMR/')
     #rmr.run()
     """
@@ -86,4 +86,3 @@ if __name__ == "__main__":
     pool = ExpertPool(market_data=train_data, experts=[rmr3, olmar3], weighting_strategy='exp_window', windows=[5])
     pool.run()
     """
-

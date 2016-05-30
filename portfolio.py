@@ -59,7 +59,9 @@ class Portfolio(object):
             past_b_history, past_dollars_history = self.load_previous_results(past_results_dir)
             self.past_b_history = past_b_history
             self.past_dollars_history = past_dollars_history
-            self.b = past_b_history[:, -1]  # Use previous b as initialization
+            #num_dimen = len(past_b_history.shape)
+            #if num_dimen == 2:
+            self.b = past_b_history[:, -1]  # Use previous b as initialization (overrieds |init_b| argument)
         else:
             self.past_b_history = None
             self.past_dollars_history = None

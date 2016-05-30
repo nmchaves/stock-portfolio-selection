@@ -1,7 +1,5 @@
 import itertools
-
 import numpy as np
-
 import util
 from portfolio import Portfolio
 from olmar import OLMAR
