@@ -24,8 +24,7 @@ class ExpertPool(Portfolio):
                  rebal_interval=1, tune_interval=None,
                  init_b=None, init_dollars=init_dollars,
                  weighting_strategy='exp_window', windows=[10], ew_alpha=0.5, ew_eta=0.1,
-                 verbose=False, silent=False, saved_results=False, saved_b=None, dollars_hist=None,
-                 past_results_dir=None, new_results_dir=None):
+                 verbose=False, silent=False, past_results_dir=None, new_results_dir=None):
 
         if not isinstance(market_data, MarketData):
             raise 'market_data input to ExpertPool constructor must be a MarketData object.'
@@ -218,41 +217,6 @@ class ExpertPool(Portfolio):
         print 'Weighting strategy: ', self.weighting_strategy
         Portfolio.print_results(self)
 
-    def run_old(self, start=None, stop=None):
-        if start is None:
-            start = self.start
-        if stop is None:
-            stop = self.stop
-
-        if self.saved_results:
-            portfolios = self.saved_b
-            dollars_history = self.saved_dollars
-
-            weights = None
-            for day in range(start, stop):
-                # Note: saved_results should be an np array of dimension num stocks x num days to use
-                if(day == 0):
-                    cur_day_op = self.data.get_op(relative=False)[day, :]  # opening prices on |cur_day|
-                    self.b = util.get_uniform_allocation(self.num_stocks, cur_day_op)
-                else:
-                    b = portfolios[:,:,day]
-                    if(day > 3):
-                        weights = self.recent_sharpe_weighting(cur_day=day, experts_dollars_history=dollars_history)
-                    else:
-                        weights = (1.0 / self.num_experts) * np.ones(self.num_experts)
-                    net_b = np.zeros(self.num_stocks)
-                    for i,experts in enumerate(self.experts):
-                        net_b += np.multiply(weights[i], b[i,:])
-
-                    sum_b = 1.0 * np.linalg.norm(net_b, ord=1)
-                    self.b = np.true_divide(net_b, sum_b)
-
-                self.update_dollars(day)
-            self.print_results()
-            
-        else:
-            Portfolio.run(self, start, stop)
-
     def save_results(self):
         super(ExpertPool, self).save_results()
 
@@ -261,71 +225,9 @@ class ExpertPool(Portfolio):
             if expert.new_results_dir is not None:
                 expert.save_results()
 
-
     def get_hyperparams_dict(self):
         hyperparams = {
             'Eta': str(self.ew_eta),
             'Alpha': str(self.ew_alpha)
         }
         return hyperparams
-
-    '''
-     def recent_sharpe_weighting(self, cur_day, experts_dollars_history):
-        """
-        Compute weights of experts based on:
-        (1/2)*exp(eta * SR_w1) + (/2)^2 * exp(eta * SR_w2) + ...
-        where SR_wi is the empirical sharpe ratio of an expert in window i.
-
-        :param cur_day:
-        :return:
-        """
-
-        num_experts = experts_dollars_history.shape[0]
-
-        windows = self.windows
-        len_windows = sum(windows)
-
-        if cur_day < len_windows:
-
-            if self.past_dollars_history is not None:
-                prior_days = len_windows - cur_day  # num days to use from the prior history
-            else:
-                # We don't have enough data to use all of the windows
-                # Just use all of the available days as a single window
-                windows = [cur_day]
-                """
-                last_full_win = -1
-                for (i, window) in enumerate(windows):
-                    if cur_day <= sum(windows[0:i+1]):
-                        break
-                    else:
-                        last_full_win = i
-
-                if last_full_win >= 0:
-                    windows = windows[0:last_full_win+1]
-                else:
-                    windows = [cur_day]
-                """
-
-        cum_sharpes = np.zeros(shape=(1, num_experts))  # sharpe ratios of each expert (summed over each window)
-        for i, dollars_history in enumerate(experts_dollars_history):
-            prev_window_start = 0
-            for (w, window) in enumerate(windows):
-                window_start = cur_day - (window + prev_window_start)
-                if w == 0:
-                    window_stop = cur_day
-                else:
-                    window_stop = prev_window_start
-                window_dollars = dollars_history[window_start:window_stop]
-
-                # Perform Exponential Weighting and Scale Down Older Windows
-                scale = (1.0 * self.ew_alpha)**w
-                cum_sharpes[0, i] += scale * exp(self.ew_eta * util.empirical_sharpe_ratio(window_dollars))
-                prev_window_start = window_start
-
-        # Normalize to obtain weights that sum to 1
-        weights = (1.0 / np.sum(cum_sharpes)) * cum_sharpes
-        return weights[0]  # return the array as a single row
-        '''
-
-
