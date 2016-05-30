@@ -1,7 +1,9 @@
-from olmar import OLMAR
 import numpy as np
-from portfolio import Portfolio
+from olmar import OLMAR
+
 import util
+from portfolio import Portfolio
+
 
 class RMR(OLMAR):
     """"

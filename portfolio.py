@@ -1,8 +1,9 @@
-import util
-from util import get_uniform_allocation, empirical_sharpe_ratio
-from constants import init_dollars, cost_per_dollar
-from market_data import MarketData
 import numpy as np
+
+import util
+from constants import init_dollars
+from market_data import MarketData
+from util import empirical_sharpe_ratio
 #import matplotlib.pyplot as plt
 
 class Portfolio(object):
@@ -14,7 +15,8 @@ class Portfolio(object):
     """
 
     def __init__(self, market_data, start=0, stop=None, rebal_interval=1, tune_interval=None, tune_length=None,
-                 init_b=None, init_dollars=init_dollars, init_dollars_hist=None, verbose=False, silent=False):
+                 init_b=None, init_dollars=init_dollars, verbose=False, silent=False,
+                 past_results_dir=None, new_results_dir=None):
         """
         :param market_data: Stock market data (MarketData object)
         :param start: What day this portfolio starts at
@@ -41,8 +43,8 @@ class Portfolio(object):
 
         self.rebal_interval = rebal_interval  # How often to rebalance
         self.tune_interval = tune_interval  # How often to tune hyperparams (if at all)
-
         self.b = init_b  # b[i] = Fraction of total money allocated to stock i
+
         self.b_history = np.zeros((self.num_stocks, self.num_days))  # portfolio before open of each day
         self.dollars_op_history = np.zeros(self.num_days)
         self.dollars_op_history[0] = init_dollars
@@ -50,6 +52,18 @@ class Portfolio(object):
         self.last_close_price = np.NaN * np.ones(self.num_stocks)
         self.verbose = verbose
         self.silent = silent
+
+        self.new_results_dir = new_results_dir
+
+        if past_results_dir is not None:
+            past_b_history, past_dollars_history = self.load_previous_results(past_results_dir)
+            self.past_b_history = past_b_history
+            self.past_dollars_history = past_dollars_history
+            self.b = past_b_history[:, -1]  # Use previous b as initialization
+        else:
+            self.past_b_history = None
+            self.past_dollars_history = None
+
 
     def tune_hyperparams(self, cur_day):
         # Implement this in your portfolio if you want to tune
@@ -163,7 +177,9 @@ class Portfolio(object):
             self.update(day, init)
 
         self.print_results()
-        #self.save_results()
+
+        if self.new_results_dir is not None:
+            self.save_results()
 
     def print_results(self):
         if self.verbose:
@@ -176,6 +192,18 @@ class Portfolio(object):
             print 'Sharpe ratio:'
             print empirical_sharpe_ratio(self.dollars_op_history)
 
+    def save_results(self):
+        raise 'save_results is an abstract method. Implement in the child class.'
+
+    def load_previous_results(self, past_results_dir):
+
+        # Load past dollars history
+        past_dollars_op_history = np.loadtxt(past_results_dir + 'dollars_history.txt', delimiter='\t')
+
+        # Load past portfolio history
+        past_b_history = np.loadtxt(past_results_dir + 'b_history.txt', delimiter='\t')
+
+        return past_b_history, past_dollars_op_history
 
     """
     Getters

@@ -9,7 +9,7 @@ from math import pow
 
 # TODO: account for 0 stocks!!!!!!
 
-class OLMAR(util.Portfolio):
+class OLMAR2(util.Portfolio):
     def __init__(self, market_data, window=5, eps=10):
         """
 

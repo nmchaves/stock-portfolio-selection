@@ -1,14 +1,18 @@
-from constants import init_dollars
-from util import predict_prices
-from portfolio import Portfolio
-from market_data import MarketData
-import numpy as np
-import util
-from math import exp
 import pdb
+from math import exp
+
+import numpy as np
+
+import util
+from constants import init_dollars
+from market_data import MarketData
+from portfolio import Portfolio
+from util import predict_prices
+
 
 # TODO: enable one to specify an initial weight distribution (eg one might believe some portfolios
 # will be better than others)
+# Get this from the past history!!
 
 class ExpertPool(Portfolio):
     """

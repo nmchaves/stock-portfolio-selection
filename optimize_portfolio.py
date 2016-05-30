@@ -13,10 +13,11 @@ from util import load_matlab_sp500_data
 from expert_pool import ExpertPool
 from olmar import OLMAR
 from rmr import RMR
-from nonparametric_markowitz import NonParametricMarkowitz
+#from nonparametric_markowitz import NonParametricMarkowitz
 import numpy as np
 import pdb
 
+# TODO: write out tune interval to saved files
 
 """
 *********************
@@ -36,16 +37,19 @@ if __name__ == "__main__":
     """
     olmar = OLMAR(market_data=train_data, tune_interval=None, verbose=True)
     olmar.run()
-    olmar2 = OLMAR(market_data=train_data, tune_interval=10, verbose=True)
-    olmar2.run()
     """
-    #rmr = RMR(market_data=train_data, tune_interval=None, verbose=True)
+    olmar2 = OLMAR(market_data=train_data, tune_interval=200, verbose=True, past_results_dir='train_results/OLMAR/')
+    olmar2.run()
+    #olmar2 = OLMAR(market_data=train_data, tune_interval=10, verbose=True, new_results_dir='train_results/OLMAR/')
+    #olmar2.run()
+    #rmr = RMR(market_data=train_data, tune_interval=200, verbose=True, new_results_dir='train_results/RMR/')
     #rmr.run()
     """
     olmar = OLMAR(market_data=train_data, tune_interval=None, verbose=True)
     olmar.run()
 
     rmr2 = RMR(market_data=train_data, tune_interval=100, verbose=True)
+    """
     """
     num_experts = 2
     olmar2 = OLMAR(market_data=train_data, tune_interval=None, verbose=True)
@@ -65,7 +69,8 @@ if __name__ == "__main__":
 
     pool = ExpertPool(market_data=train_data, experts=[olmar2, npm], weighting_strategy='exp_window', ew_eta=0.1, windows=[10], saved_results=True, saved_b = b_hist, dollars_hist=dollars_history)
     pool.run()
-
+    pdb.set_trace()
+    """
     """
     for tune_int in range(100, 10, -10):
         print 'Tuning every ', str(tune_int), ' days'

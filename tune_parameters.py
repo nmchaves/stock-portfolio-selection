@@ -15,26 +15,28 @@ def get_all_combinations(list1, list2):
 	return combinations
 
 def tune_parameters(un_named_params, named_params, tuning_params):
-'''
-Method for tuning parameters during runtime. 
+	'''
+	Method for tuning parameters during runtime.
 
-:param: un_named_params - a TUPLE containing parameters without default values
-:param: named_params 	- a DICTIONARY mapping static parameter names to values
-:param: tuning_params	- a DICTIONARY mapping names of tuning parameters to a 
-							list specifying a range of values to tune
-'''
-keys = [key for key in tuning_params]
-param_combos = [[elem] for elem in tuning_params[keys[0]]]
-for i in range(1,len(keys)):
-	key = keys[i]
-	param_combos = get_all_combinations(param_combos, [[elem] for elem in tuning_params[key]])
+	:param: un_named_params - a TUPLE containing parameters without default values
+	:param: named_params 	- a DICTIONARY mapping static parameter names to values
+	:param: tuning_params	- a DICTIONARY mapping names of tuning parameters to a
+								list specifying a range of values to tune
+	'''
+	keys = [key for key in tuning_params]
+	param_combos = [[elem] for elem in tuning_params[keys[0]]]
+	for i in range(1,len(keys)):
+		key = keys[i]
+		param_combos = get_all_combinations(param_combos, [[elem] for elem in tuning_params[key]])
 
-for params in param_combos:
-	param_dict = {}
-	for i in range(len(keys)):
-		param_dict[keys[i]] = params[i]
-	
-	portfolio = Portfolio(*un_named_params, **named_params, **param_dict)
-	portfolio.run()
+	for params in param_combos:
+		param_dict = {}
+		for i in range(len(keys)):
+			param_dict[keys[i]] = params[i]
 
-	# TODO: get sharpe ratio
+		portfolio = Portfolio(*un_named_params, **named_params, **param_dict)
+		portfolio.run()
+
+		# TODO: get sharpe ratio
+
+tune_parameters()

@@ -1,7 +1,8 @@
+import numpy as np
+
 import util
 from portfolio import Portfolio
-from constants import init_dollars, cost_per_dollar
-import numpy as np
+
 #import matplotlib.pyplot as plt
 from cvxpy import *
 import pdb
@@ -22,7 +23,7 @@ class NonParametricMarkowitz(Portfolio):
 
     def get_market_window(self, window, day):
         # Compose historical market window, including opening prices
-        available = util.get_avail_stocks(self.data.get_op()[day-window+1,:])
+        available = util.get_avail_stocks(self.data.get_op()[day - window + 1, :])
         available_inds = np.asarray([i for i in range(497) if available[i] > 0])
 
         op = self.data.get_op()[day-window+1:day+1,available_inds]
@@ -49,12 +50,12 @@ class NonParametricMarkowitz(Portfolio):
             cur_day_op = self.data.get_op(relative=False)[cur_day, :]  # opening prices on |cur_day|
             return util.get_uniform_allocation(self.num_stocks, cur_day_op)
         elif(cur_day < self.start_date):
-            available = util.get_avail_stocks(self.data.get_op()[cur_day,:])
+            available = util.get_avail_stocks(self.data.get_op()[cur_day, :])
             num_available = np.sum(available)
             new_allocation = 1.0/num_available * np.asarray(available)
         else:
             k = self.k
-            available = util.get_avail_stocks(self.data.get_op()[cur_day-self.window_len+1,:])
+            available = util.get_avail_stocks(self.data.get_op()[cur_day - self.window_len + 1, :])
             available_inds = util.get_available_inds(available)
             history = self.get_market_window(self.window_len, cur_day)
             num_available = history.shape[0]

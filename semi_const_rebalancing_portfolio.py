@@ -4,10 +4,10 @@
 
 """
 
-import util
-from constants import init_dollars, cost_per_trans_per_dollar
 import numpy as np
-import matplotlib.pyplot as plt
+
+import util
+from constants import cost_per_trans_per_dollar
 
 
 class UniformSemiConstantRebalancedPortfolio(util.Portfolio):
@@ -23,7 +23,7 @@ class UniformSemiConstantRebalancedPortfolio(util.Portfolio):
         :return: A (1 x num_stocks) array of fractions. Each fraction represents the
         amount of the money should be invested in that stock at the end of the day.
         """
-        stocks_avail = util.get_avail_stocks(self.data.op[cur_day,:])
+        stocks_avail = util.get_avail_stocks(self.data.op[cur_day, :])
         num_stocks_avail = len(stocks_avail.keys())
         new_allocation = np.zeros(self.num_stocks)
         for stock in stocks_avail.keys():
@@ -51,11 +51,11 @@ class UniformSemiConstantRebalancedPortfolio(util.Portfolio):
             # Apply the CRP approach
             num_stocks_to_invest_in = np.count_nonzero(new_allocation)
 
-            dist_from_uniform = util.dollars_away_from_uniform(self.shares_holding, close_prices, 1.0*total_dollars/num_stocks_to_invest_in)
+            dist_from_uniform = util.dollars_away_from_uniform(self.shares_holding, close_prices, 1.0 * total_dollars / num_stocks_to_invest_in)
             total_trans_costs = dist_from_uniform * cost_per_trans_per_dollar
             rebalanced_dollars = 1.0 * (total_dollars - total_trans_costs)/ num_stocks_to_invest_in
 
-            stocks_avail = util.get_avail_stocks(self.data.op[cur_day,:])
+            stocks_avail = util.get_avail_stocks(self.data.op[cur_day, :])
             new_share_holdings = np.zeros(self.num_stocks)
             for idx in stocks_avail.keys():
                 new_share_holdings[idx] = 1.0 * rebalanced_dollars / close_prices[idx]

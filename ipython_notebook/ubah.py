@@ -1,6 +1,6 @@
 import util
-from util import get_uniform_allocation
 from portfolio import Portfolio
+from util import get_uniform_allocation
 
 
 class UniformBuyAndHoldPortfolio(Portfolio):
