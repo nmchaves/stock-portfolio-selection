@@ -9,6 +9,7 @@ import pdb
 
 class NonParametricMarkowitz(Portfolio):
     def __init__(self, market_data, window_len, k, risk_aversion, start_date, portfolio_cap = 1.0):
+        self.portfolio_type = 'NPM'
         self.window_len = window_len
         self.k = k
         self.risk_aversion = risk_aversion

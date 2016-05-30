@@ -21,6 +21,8 @@ class RMR(OLMAR):
                  tune_interval=None, init_b=None, verbose=False, silent=False,
                  past_results_dir=None, new_results_dir=None):
 
+        self.portfolio_type = 'RMR'
+
         if past_results_dir is not None:
             # Load in the previous results.
             # Set tau and past_dollars_history based on past tuning. Pass window,, eps, and init_b to superclass
@@ -210,7 +212,7 @@ class RMR(OLMAR):
 
     def save_results(self):
         print 'saving RMR'
-        save_dir = 'train_results/RMR/'
+        save_dir = self.new_results_dir
 
         # Dollars History File
         util.save_dollars_history(save_dir=save_dir, dollars=self.dollars_op_history, portfolio_type='RMR')
@@ -219,12 +221,15 @@ class RMR(OLMAR):
         util.save_b_history(save_dir=save_dir, b_history=self.b_history, portfolio_type='RMR')
 
         # Hyperparameters File
+        util.save_hyperparams(save_dir=save_dir, hyperparams_dict=self.get_hyperparams_dict(), portfolio_type='RMR')
+
+    def get_hyperparams_dict(self):
         hyperparams = {
             'Window': str(self.window),
             'Epsilon': str(self.eps),
             'Tau': str(self.tau)
         }
-        util.save_hyperparams(save_dir=save_dir, hyperparams_dict=hyperparams, portfolio_type='RMR')
+        return hyperparams
 
     def load_previous_hyperparams(self, past_results_dir):
         hyperparams_dict = util.load_hyperparams(past_results_dir=past_results_dir)

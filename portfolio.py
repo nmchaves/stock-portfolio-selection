@@ -6,6 +6,7 @@ from market_data import MarketData
 from util import empirical_sharpe_ratio
 #import matplotlib.pyplot as plt
 
+
 class Portfolio(object):
     """
     Superclass for any portfolio optimization algorithm.
@@ -59,8 +60,6 @@ class Portfolio(object):
             past_b_history, past_dollars_history = self.load_previous_results(past_results_dir)
             self.past_b_history = past_b_history
             self.past_dollars_history = past_dollars_history
-            #num_dimen = len(past_b_history.shape)
-            #if num_dimen == 2:
             self.b = past_b_history[:, -1]  # Use previous b as initialization (overrieds |init_b| argument)
         else:
             self.past_b_history = None
@@ -195,7 +194,19 @@ class Portfolio(object):
             print empirical_sharpe_ratio(self.dollars_op_history)
 
     def save_results(self):
-        raise 'save_results is an abstract method. Implement in the child class.'
+        if self.new_results_dir is None:
+            return
+
+        print 'Saving ', self.portfolio_type
+        save_dir = self.new_results_dir
+
+        util.save_dollars_history(save_dir=save_dir, dollars=self.dollars_op_history, portfolio_type=self.portfolio_type)
+        util.save_b_history(save_dir=save_dir, b_history=self.b_history, portfolio_type=self.portfolio_type)
+        util.save_hyperparams(save_dir=save_dir, hyperparams_dict=self.get_hyperparams_dict(), portfolio_type=self.portfolio_type)
+        return
+
+    def get_hyperparams_dict(self):
+        raise 'Abstract method. Implement in the child class.'
 
     def load_previous_results(self, past_results_dir):
 

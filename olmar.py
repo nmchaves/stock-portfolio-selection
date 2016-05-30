@@ -34,6 +34,8 @@ class OLMAR(Portfolio):
         if window < 1:
             raise Exception('Window length must be at least 1, and it is recommended that the window be >= 3.')
 
+        self.portfolio_type = 'OLMAR'
+
         if past_results_dir is not None:
             hyperparams_dict = util.load_hyperparams(past_results_dir, ['Window', 'Epsilon'])
             window = int(hyperparams_dict['Window'])
@@ -170,9 +172,12 @@ class OLMAR(Portfolio):
             print 30 * '-'
         Portfolio.print_results(self)
 
-    def save_results(self):
+    """
+    def save_results(self, save_dir):
+
+
         print 'saving OLMAR'
-        save_dir = 'train_results/OLMAR/'
+        save_dir = self.new_results_dir
 
         # Dollars History File
         util.save_dollars_history(save_dir=save_dir, dollars=self.dollars_op_history, portfolio_type='OLMAR')
@@ -181,8 +186,11 @@ class OLMAR(Portfolio):
         util.save_b_history(save_dir=save_dir, b_history=self.b_history, portfolio_type='OLMAR')
 
         # Hyperparameters File
+        util.save_hyperparams(save_dir=save_dir, hyperparams_dict=self.get_hyperparams_dict(), portfolio_type='OLMAR')
+    """
+    def get_hyperparams_dict(self):
         hyperparams = {
             'Window': str(self.window),
             'Epsilon': str(self.eps)
         }
-        util.save_hyperparams(save_dir=save_dir, hyperparams_dict=hyperparams, portfolio_type='OLMAR')
+        return hyperparams

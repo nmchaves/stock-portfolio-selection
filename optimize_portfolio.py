@@ -13,7 +13,7 @@ from util import load_matlab_sp500_data
 from expert_pool import ExpertPool
 from olmar import OLMAR
 from rmr import RMR
-#from nonparametric_markowitz import NonParametricMarkowitz
+from nonparametric_markowitz import NonParametricMarkowitz
 import numpy as np
 import pdb
 
@@ -38,10 +38,13 @@ if __name__ == "__main__":
     olmar = OLMAR(market_data=train_data, tune_interval=None, verbose=True)
     olmar.run()
     """
-    olmar2 = OLMAR(market_data=train_data, tune_interval=10, verbose=True, past_results_dir='train_results/OLMAR/')
-    olmar2.run()
-    olmar = OLMAR(market_data=train_data, tune_interval=10, verbose=True, new_results_dir='train_results/OLMAR/')
-    olmar.run()
+    olmar = OLMAR(market_data=train_data, tune_interval=100, verbose=True, past_results_dir='train_results/OLMAR/')
+    rmr = RMR(market_data=train_data, tune_interval=200, verbose=True, past_results_dir='train_results/RMR/')
+    pool = ExpertPool(market_data=train_data, experts=[olmar, rmr], verbose=True, past_results_dir='train_results/EP/')
+    pool.run()
+
+    #olmar = OLMAR(market_data=train_data, tune_interval=100, verbose=True, new_results_dir='train_results/OLMAR/')
+    #olmar.run()
     #rmr = RMR(market_data=train_data, tune_interval=200, verbose=True, new_results_dir='train_results/RMR/')
     #rmr.run()
     """
