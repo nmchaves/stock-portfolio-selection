@@ -74,8 +74,10 @@ class OLMAR(Portfolio):
     def compute_lambda(self, ppr_avail, mean_ppr, avail_idxs):
         num_avail_stocks = len(ppr_avail)
         l2_norm = np.linalg.norm(ppr_avail - mean_ppr*np.ones(num_avail_stocks), ord=2)
-        #if l2_norm == 0:
-        #    print '0'
+
+        # TODO: check if something in RMR causes this
+        if l2_norm == 0:
+            return 0
         avail_b = np.array(self.b)[avail_idxs]  # Current allocations for available stocks
         predicted_under_eps = self.eps - np.dot(avail_b, ppr_avail)
 
