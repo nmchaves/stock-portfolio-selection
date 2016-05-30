@@ -1,11 +1,11 @@
+import time
+
+import numpy as np
+from cvxpy import *
+
 import util
 from portfolio import Portfolio
-from constants import init_dollars, cost_per_dollar
-import numpy as np
-import matplotlib.pyplot as plt
-from cvxpy import *
-import pdb
-import time
+
 
 class NonParametricMarkowitz(Portfolio):
     def __init__(self, market_data, window_len, k, risk_aversion, start_date, portfolio_cap=1.0):

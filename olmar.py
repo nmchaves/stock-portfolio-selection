@@ -1,11 +1,11 @@
-import numpy as np
-from math import pow
-from portfolio import Portfolio
-import util
 import itertools
+from math import pow
+import numpy as np
+import util
+from portfolio import Portfolio
 
-# todo: tune eps
-# Todo: tuning should only take place over last couple weeks or so...
+
+# TODO: File Containing Hyperparameter Ranges might be useful
 
 class OLMAR(Portfolio):
     """"
@@ -17,7 +17,7 @@ class OLMAR(Portfolio):
     """
     def __init__(self, market_data, start=0, stop=None, window=20, eps=1.1, rebal_interval=1,
                  window_range=range(16, 26, 2), eps_range=[1.1, 1.2, 1.3, 1.4, 1.5], tune_interval=None,
-                 init_b=None, verbose=False, silent=False):
+                 init_b=None, verbose=False, silent=False, past_results_dir=None, new_results_dir=None):
         """
 
         :param market_data: Stock market data (MarketData object)
@@ -26,21 +26,30 @@ class OLMAR(Portfolio):
         increase its wealth by more than a factor of |eps|, then it rebalances. Otherwise, it keeps the allocation
         the same.
         :param rebal_interval: Rebalance interval (Rebalance the portfolio every |reb_int| days)
+        :param train_results_dir: Path to directory containing results of training, i.e. hyperparameters, b values,
+        and history of wealth. Hyperparameters in this directory will override hyperparams specified as arguments above.
         """
         if eps <= 1:
             raise Exception('Epsilon must be > 1.')
         if window < 1:
             raise Exception('Window length must be at least 1, and it is recommended that the window be >= 3.')
 
+        self.portfolio_type = 'OLMAR'
+
+        if past_results_dir is not None:
+            hyperparams_dict = util.load_hyperparams(past_results_dir, ['Window', 'Epsilon'])
+            window = int(hyperparams_dict['Window'])
+            eps = hyperparams_dict['Epsilon']
+
         self.window = window
         self.eps = eps
-
-        # Tuning space for hyperparameters
         self.window_range = window_range
         self.eps_range = eps_range
+        self.new_results_dir = new_results_dir
 
         super(OLMAR, self).__init__(market_data=market_data, start=start, stop=stop, rebal_interval=rebal_interval,
-                                    init_b=init_b, tune_interval=tune_interval, verbose=verbose, silent=silent)
+                                    init_b=init_b, tune_interval=tune_interval, verbose=verbose, silent=silent,
+                                    past_results_dir=past_results_dir, new_results_dir=new_results_dir)
 
     def predict_price_relatives(self, day):
         """
@@ -163,7 +172,25 @@ class OLMAR(Portfolio):
             print 30 * '-'
         Portfolio.print_results(self)
 
-    def save_results(self):
-        output_fname = 'results/new/olmar.txt'
-        util.save_results(output_fname, self.dollars_history)
+    """
+    def save_results(self, save_dir):
 
+
+        print 'saving OLMAR'
+        save_dir = self.new_results_dir
+
+        # Dollars History File
+        util.save_dollars_history(save_dir=save_dir, dollars=self.dollars_op_history, portfolio_type='OLMAR')
+
+        # Portfolio Allocation History File
+        util.save_b_history(save_dir=save_dir, b_history=self.b_history, portfolio_type='OLMAR')
+
+        # Hyperparameters File
+        util.save_hyperparams(save_dir=save_dir, hyperparams_dict=self.get_hyperparams_dict(), portfolio_type='OLMAR')
+    """
+    def get_hyperparams_dict(self):
+        hyperparams = {
+            'Window': str(self.window),
+            'Epsilon': str(self.eps)
+        }
+        return hyperparams

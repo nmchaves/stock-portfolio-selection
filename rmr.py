@@ -1,8 +1,8 @@
-from olmar import OLMAR
-import numpy as np
-from portfolio import Portfolio
-import util
 import itertools
+import numpy as np
+import util
+from portfolio import Portfolio
+from olmar import OLMAR
 
 
 class RMR(OLMAR):
@@ -17,14 +17,26 @@ class RMR(OLMAR):
 
     """
     def __init__(self, market_data, start=0, stop=None, window=20, eps=1.3, tau=0.01, max_iter=100,
-                rebal_interval=1, window_range=range(14, 26, 2), eps_range=[1.1, 1.2, 1.3, 1.4, 1.5, 1.6],
-                 tune_interval=None, init_b=None, verbose=False, silent=False):
+                rebal_interval=1, window_range=range(14, 26, 2), eps_range=[1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5],
+                 tune_interval=None, init_b=None, verbose=False, silent=False,
+                 past_results_dir=None, new_results_dir=None):
+
+        self.portfolio_type = 'RMR'
+
+        if past_results_dir is not None:
+            # Load in the previous results.
+            # Set tau and past_dollars_history based on past tuning. Pass window,, eps, and init_b to superclass
+            # where they'll be used for initialization.
+            hyperparams_dict = util.load_hyperparams(past_results_dir, ['Tau'])
+            tau = hyperparams_dict['Tau']
 
         self.tau = tau  # tolerance level
         self.max_iter = max_iter
+
         super(RMR, self).__init__(market_data=market_data, start=start, stop=stop, window=window, eps=eps,
                                   rebal_interval=rebal_interval, window_range=window_range, eps_range=eps_range,
-                                  tune_interval=tune_interval, init_b=init_b, verbose=verbose, silent=silent)
+                                  tune_interval=tune_interval, init_b=init_b, verbose=verbose, silent=silent,
+                                  past_results_dir=past_results_dir, new_results_dir=new_results_dir)
 
     def predict_price_relatives(self, day):
         """
@@ -162,6 +174,8 @@ class RMR(OLMAR):
         # Create new instances of this portfolio with various hyperparameter settings
         # to find the best constant hyperparameters in hindsight
 
+        # TODO: use previous history, if available
+
         tune_duration = 20
         if cur_day >= tune_duration:
             start_day = cur_day - tune_duration
@@ -197,8 +211,35 @@ class RMR(OLMAR):
         Portfolio.print_results(self)
 
     def save_results(self):
-        output_fname = 'results/new/rmr.txt'
-        util.save_results(output_fname, self.dollars_history)
+        print 'saving RMR'
+        save_dir = self.new_results_dir
+
+        # Dollars History File
+        util.save_dollars_history(save_dir=save_dir, dollars=self.dollars_op_history, portfolio_type='RMR')
+
+        # Portfolio Allocation History File
+        util.save_b_history(save_dir=save_dir, b_history=self.b_history, portfolio_type='RMR')
+
+        # Hyperparameters File
+        util.save_hyperparams(save_dir=save_dir, hyperparams_dict=self.get_hyperparams_dict(), portfolio_type='RMR')
+
+    def get_hyperparams_dict(self):
+        hyperparams = {
+            'Window': str(self.window),
+            'Epsilon': str(self.eps),
+            'Tau': str(self.tau)
+        }
+        return hyperparams
+
+    def load_previous_hyperparams(self, past_results_dir):
+        hyperparams_dict = util.load_hyperparams(past_results_dir=past_results_dir)
+
+        if 'Tau' in hyperparams_dict:
+            tau = hyperparams_dict['Tau']
+        else:
+            raise Exception('Tau parameter not saved in results file in ' + past_results_dir)
+        return tau
+
 
 
 

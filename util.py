@@ -307,3 +307,51 @@ def rebalance(value_vec, value_realizable, portfolio_dst):
 
     new_value_vec = portfolio_dst * (value_realizable - trans_cost)
     return new_value_vec, trans_cost
+
+
+def save_dollars_history(save_dir, dollars, portfolio_type):
+    dollars_hist_file = save_dir + 'dollars_history.txt'
+    header = 'Dollars held by ' + portfolio_type + ' portfolio at market open on each day of training set.'
+    np.savetxt(dollars_hist_file, dollars, delimiter='\t', header=header)
+    return
+
+
+def save_b_history(save_dir, b_history, portfolio_type):
+    b_hist_file = save_dir + 'b_history.txt'
+    header = portfolio_type + ' portfolio allocation on each day of training set.'
+    np.savetxt(b_hist_file, b_history, delimiter='\t', header=header)
+    return
+
+
+def save_hyperparams(save_dir, hyperparams_dict, portfolio_type):
+
+    final_hyp_file = save_dir + 'hyperparams.txt'
+    out_file = open(final_hyp_file, 'w')
+    header = '# ' + portfolio_type + ' hyperparameters selected by online tuning on each day of the training set.\n'
+    col_titles = '# Param\tFinal_Value\n'
+    out_file.write(header + col_titles)
+
+    for key, val in hyperparams_dict.iteritems():
+        out_file.write(key + '\t' + val + '\n')
+    out_file.close()
+
+
+def load_hyperparams(past_results_dir, params):
+    """
+
+    :param past_results_dir: Path to directory containing stored hyperparams.
+    :param params: List of string of hyperparameter names
+    :return: Dictionary mapping hyperparm strings to their values.
+    """
+
+    hyperparams_dict = {}
+    hyp_file = open(past_results_dir + 'hyperparams.txt')
+    for line in hyp_file:
+        if line[0] != '#':
+            vals = line.rstrip().split('\t')
+            param = vals[0]
+            if param in params:
+                val = float(vals[1])
+                hyperparams_dict[param] = val
+    return hyperparams_dict
+
