@@ -17,7 +17,7 @@ class Portfolio(object):
 
     def __init__(self, market_data, start=0, stop=None, rebal_interval=1, tune_interval=None, tune_length=None,
                  init_b=None, init_dollars=init_dollars, verbose=False, silent=False,
-                 past_results_dir=None, new_results_dir=None):
+                 past_results_dir=None, new_results_dir=None, repeat_past=False):
         """
         :param market_data: Stock market data (MarketData object)
         :param start: What day this portfolio starts at
@@ -28,7 +28,7 @@ class Portfolio(object):
         """
 
         if not isinstance(market_data, MarketData):
-            raise 'market_data input to Portfolio constructor must be a MarketData object.'
+            raise Exception('market_data input to Portfolio constructor must be a MarketData object.')
 
         self.data = market_data
         self.num_stocks = len(self.data.stock_names)
@@ -60,11 +60,13 @@ class Portfolio(object):
             past_b_history, past_dollars_history = self.load_previous_results(past_results_dir)
             self.past_b_history = past_b_history
             self.past_dollars_history = past_dollars_history
+            self.len_past = past_b_history.shape[1]
             self.b = past_b_history[:, -1]  # Use previous b as initialization (overrieds |init_b| argument)
         else:
             self.past_b_history = None
             self.past_dollars_history = None
 
+        self.repeat_past = repeat_past
 
     def tune_hyperparams(self, cur_day):
         # Implement this in your portfolio if you want to tune
@@ -80,7 +82,7 @@ class Portfolio(object):
         """
 
         # Check if we need to tune hyperparameters today
-        if self.tune_interval:
+        if self.tune_interval and not self.repeat_past:
             if cur_day > self.start and cur_day % self.tune_interval == 0:
                 self.tune_hyperparams(cur_day)
 
@@ -98,6 +100,12 @@ class Portfolio(object):
         """
 
         day_idx = cur_day - self.start
+
+        if self.repeat_past:
+            # Use results we've already run w/out re-running algorithm
+            if day_idx < self.len_past-1:
+                self.b = self.past_b_history[:, day_idx+1]
+            return
 
         if init and (self.b is not None):
             # b has already been initialized using initialization argument init_b
