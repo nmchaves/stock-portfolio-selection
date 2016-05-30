@@ -24,7 +24,7 @@ class ExpertPool(Portfolio):
                  rebal_interval=1, tune_interval=None,
                  init_b=None, init_dollars=init_dollars,
                  weighting_strategy='exp_window', windows=[10], ew_alpha=0.5, ew_eta=0.1,
-                 verbose=False, silent=False, past_results_dir=None, new_results_dir=None):
+                 verbose=False, silent=False, past_results_dir=None, new_results_dir=None, repeat_past=False):
 
         if not isinstance(market_data, MarketData):
             raise 'market_data input to ExpertPool constructor must be a MarketData object.'
@@ -58,7 +58,7 @@ class ExpertPool(Portfolio):
 
         super(ExpertPool, self).__init__(market_data, start=start, stop=stop, rebal_interval=rebal_interval,
                                          init_b=init_b, tune_interval=tune_interval, verbose=verbose, silent=silent,
-                                         past_results_dir=past_results_dir, new_results_dir=new_results_dir)
+                                         past_results_dir=past_results_dir, new_results_dir=new_results_dir, repeat_past=repeat_past)
 
     def aggregate_experts(self, weights):
         net_b = np.zeros(self.num_stocks)  # weighted sum of expert allocations (must sum to 1)
@@ -128,7 +128,6 @@ class ExpertPool(Portfolio):
         windows = self.windows
         len_windows = sum(windows)
 
-        #prior_days = 0  # num days to use from the training set history (if it was saved and loaded)
         if cur_day < len_windows:
             expert = self.experts[0]  # if 1 expert has history, then all of them should
             if expert.past_dollars_history is None:

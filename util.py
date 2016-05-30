@@ -132,7 +132,6 @@ def empirical_sharpe_ratio(dollars):
     :return: Sharpe ratio
     """
 
-    #dollars_np = np.array(dollars).reshape(1, len(dollars))
     return_seq = np.log(dollars[1:] / dollars[:-1])
     sharpe = np.sqrt(252) * np.mean(return_seq) / np.std(return_seq)
     return sharpe

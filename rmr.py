@@ -19,7 +19,7 @@ class RMR(OLMAR):
     def __init__(self, market_data, start=0, stop=None, window=20, eps=1.3, tau=0.01, max_iter=100,
                 rebal_interval=1, window_range=range(14, 26, 2), eps_range=[1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5],
                  tune_interval=None, init_b=None, verbose=False, silent=False,
-                 past_results_dir=None, new_results_dir=None):
+                 past_results_dir=None, new_results_dir=None, repeat_past=False):
 
         self.portfolio_type = 'RMR'
 
@@ -36,7 +36,7 @@ class RMR(OLMAR):
         super(RMR, self).__init__(market_data=market_data, start=start, stop=stop, window=window, eps=eps,
                                   rebal_interval=rebal_interval, window_range=window_range, eps_range=eps_range,
                                   tune_interval=tune_interval, init_b=init_b, verbose=verbose, silent=silent,
-                                  past_results_dir=past_results_dir, new_results_dir=new_results_dir)
+                                  past_results_dir=past_results_dir, new_results_dir=new_results_dir, repeat_past=repeat_past)
 
     def predict_price_relatives(self, day):
         """
