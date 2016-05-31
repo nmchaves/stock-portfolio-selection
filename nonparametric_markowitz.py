@@ -21,7 +21,6 @@ class NonParametricMarkowitz(Portfolio):
         self.sigma = None
         self.startup_time = 10
 
-
         if past_results_dir is not None:
             hyperparams_dict = util.load_hyperparams(past_results_dir, ['Window', 'K', 'Risk', 'Start_Date'])
             self.window_len = int(hyperparams_dict['Window'])
@@ -39,9 +38,14 @@ class NonParametricMarkowitz(Portfolio):
     def get_market_window(self, window, day):
         # Compose historical market window, including opening prices
         available = util.get_avail_stocks(self.data.get_op()[day - window + 1, :])
+        if(day <= window-1):
+            available = util.get_avail_stocks(self.data_train.get_op()[-1, :])
+
         available_inds = np.asarray([i for i in range(497) if available[i] > 0])
 
-        if(day >= window):
+        pdb.set_trace()
+
+        if(day >= window-1):
             op = self.data.get_op()[day-window+1:day+1,available_inds]
             hi = self.data.get_hi()[day-window+1:day,available_inds]
             lo = self.data.get_lo()[day-window+1:day,available_inds]
@@ -134,11 +138,13 @@ class NonParametricMarkowitz(Portfolio):
         hoping that our covariance does not become singular later on.
         '''
         
-        
         # Get the previous day's closing data
         last_close = np.nan_to_num(self.data.get_cl()[cur_day-1,:])
         num_total_stocks = last_close.shape[0]
         num_examples = cur_day-1
+
+        if(self.data_train is not None):
+            num_examples += 1247
 
         # If the parameters are uninitialized, initialize them
         if(self.mu == None):
@@ -172,6 +178,9 @@ class NonParametricMarkowitz(Portfolio):
         print 'Saving ', self.portfolio_type
         save_dir = self.new_results_dir
 
+        # Add final portfolio
+        self.b_history = np.concatenate((self.b_history, np.reshape(self.b, (-1,1))), axis=1)
+
         util.save_dollars_history(save_dir=save_dir, dollars=self.dollars_op_history, portfolio_type=self.portfolio_type)
         util.save_b_history(save_dir=save_dir, b_history=self.b_history, portfolio_type=self.portfolio_type)
         util.save_hyperparams(save_dir=save_dir, hyperparams_dict=self.get_hyperparams_dict(), portfolio_type=self.portfolio_type)
@@ -184,7 +193,7 @@ class NonParametricMarkowitz(Portfolio):
 
     def load_state(self, load_dir):
         self.mu = np.load(load_dir + 'mu.npy')
-        self.sigma = np.load(load_dir + 'mu.npy')
+        self.sigma = np.load(load_dir + 'sigma.npy')
 
 
     def print_results(self):
