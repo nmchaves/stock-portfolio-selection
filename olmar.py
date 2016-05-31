@@ -43,6 +43,8 @@ class OLMAR(Portfolio):
 
         self.window = window
         self.eps = eps
+        self.window_hist = [window]  # History of hyperparam value (helps us see if the hyperparm range is reasonable)
+        self.eps_hist = [eps]
         self.window_range = window_range
         self.eps_range = eps_range
         self.new_results_dir = new_results_dir
@@ -179,6 +181,8 @@ class OLMAR(Portfolio):
         best_window, best_eps = hyp_combos[sharpe_ratios.index(max(sharpe_ratios))]
         self.window = best_window
         self.eps = best_eps
+        self.eps_hist.append(best_eps)
+        self.window_hist.append(best_window)
         return
 
     def print_results(self):

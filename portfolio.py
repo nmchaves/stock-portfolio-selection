@@ -20,7 +20,7 @@ class Portfolio(object):
                  past_results_dir=None, new_results_dir=None, repeat_past=False):
         """
         :param market_data: Stock market data (MarketData object)
-        :param start: What day this portfolio starts at
+        :param start: What day this portfolio starts at. (For tuning hyperparams)
         :param init_b: An initial allocation to make at the end of the 1st day. This is useful if
         you want to inject prior knowledge about which stocks you think will perform well. Also useful
         for tuning hyperparameters, because we may want the portfolio to start out in a particular state.
