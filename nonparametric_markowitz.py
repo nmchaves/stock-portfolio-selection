@@ -21,7 +21,6 @@ class NonParametricMarkowitz(Portfolio):
         self.sigma = None
         self.startup_time = 10
 
-        pdb.set_trace()
 
         if past_results_dir is not None:
             hyperparams_dict = util.load_hyperparams(past_results_dir, ['Window', 'K', 'Risk', 'Start_Date'])
@@ -31,7 +30,7 @@ class NonParametricMarkowitz(Portfolio):
             self.start_date = hyperparams_dict['Start_Date']
             self.load_state(past_results_dir)
 
-        super(NonParametricMarkowitz,self).__init__(market_data, start=start, stop=stop, 
+        super(NonParametricMarkowitz,self).__init__(market_data, market_data_train=market_data_train, start=start, stop=stop, 
                     rebal_interval=rebal_interval, tune_interval=tune_interval, tune_length=tune_length, 
                     init_b=None, init_dollars=init_dollars, verbose=False, silent=False, past_results_dir=past_results_dir, 
                     new_results_dir=new_results_dir, repeat_past=repeat_past)
@@ -42,10 +41,26 @@ class NonParametricMarkowitz(Portfolio):
         available = util.get_avail_stocks(self.data.get_op()[day - window + 1, :])
         available_inds = np.asarray([i for i in range(497) if available[i] > 0])
 
-        op = self.data.get_op()[day-window+1:day+1,available_inds]
-        hi = self.data.get_hi()[day-window+1:day,available_inds]
-        lo = self.data.get_lo()[day-window+1:day,available_inds]
-        cl = self.data.get_cl()[day-window+1:day,available_inds]
+        if(day >= window):
+            op = self.data.get_op()[day-window+1:day+1,available_inds]
+            hi = self.data.get_hi()[day-window+1:day,available_inds]
+            lo = self.data.get_lo()[day-window+1:day,available_inds]
+            cl = self.data.get_cl()[day-window+1:day,available_inds]
+        elif(self.data_train is not None):
+            op = self.data_train.get_op()[day-window+1:, available_inds]
+            op = np.concatenate((op,self.data.get_op()[:day+1,available_inds]),axis=1)
+
+            hi = self.data_train.get_hi()[day-window+1:, available_inds]
+            hi = np.concatenate((hi,self.data.get_hi()[:day,available_inds]),axis=1)
+
+            lo = self.data_train.get_lo()[day-window+1:, available_inds]
+            lo = np.concatenate((lo,self.data.get_lo()[:day,available_inds]),axis=1)
+
+            cl = self.data_train.get_cl()[day-window+1:, available_inds]
+            cl = np.concatenate((cl,self.data.get_cl()[:day,available_inds]),axis=1)
+
+        else:
+            raise 'NPM called get_market_window with day<window'
         history = np.concatenate((op, hi, lo, cl)).T
         return history
 
@@ -70,8 +85,6 @@ class NonParametricMarkowitz(Portfolio):
             num_available = np.sum(available)
             new_allocation = 1.0/num_available * np.asarray(available)
         else:
-            pdb.set_trace()
-
             k = self.k
             available = util.get_avail_stocks(self.data.get_op()[cur_day - self.window_len + 1, :])
             available_inds = util.get_available_inds(available)
@@ -98,9 +111,6 @@ class NonParametricMarkowitz(Portfolio):
                 S_i = self.sigma[inds,:]
                 S_i = S_i[:,inds]
 
-                if i == 265:
-                    pdb.set_trace()
-
                 d += -(b[i]*m_i).T*np.ones(k) + l*quad_form(b[i]*np.ones(k), S_i) #+ 0.00005*norm(b-b_last,2) #0.00005
                 
             constraints = [c>= b, c >= -b, sum_entries(c)==1]	#, b <= self.cap, b>= - self.cap] #[b >= 0, np.ones(num_available).T*b == 1]
@@ -110,6 +120,9 @@ class NonParametricMarkowitz(Portfolio):
 
             new_allocation = np.zeros(len(available))
             new_allocation[available_inds] = b.value
+
+            if(cur_day%50 == 0):
+                print 'Day %d' % (cur_day)
 
         return new_allocation
 
