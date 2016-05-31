@@ -43,8 +43,6 @@ class NonParametricMarkowitz(Portfolio):
 
         available_inds = np.asarray([i for i in range(497) if available[i] > 0])
 
-        pdb.set_trace()
-
         if(day >= window-1):
             op = self.data.get_op()[day-window+1:day+1,available_inds]
             hi = self.data.get_hi()[day-window+1:day,available_inds]
@@ -92,6 +90,8 @@ class NonParametricMarkowitz(Portfolio):
 
             k = self.k
             available = util.get_avail_stocks(self.data.get_op()[cur_day - self.window_len + 1, :])
+            if(cur_day <= self.window_len-1):
+                available = util.get_avail_stocks(self.data_train.get_op()[-1, :])
             available_inds = util.get_available_inds(available)
             history = self.get_market_window(self.window_len, cur_day)
             num_available = history.shape[0]
