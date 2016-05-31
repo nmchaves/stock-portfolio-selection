@@ -1,5 +1,5 @@
 # RMR hyperparameters selected by online tuning on each day of the training set.
 # Param	Final_Value
-Epsilon	2.1
-Window	24
-Tau	0.01
+Epsilon	1.1
+Window	5
+Tau	0.001
