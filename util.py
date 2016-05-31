@@ -17,13 +17,13 @@ def load_matlab_sp500_data(file_path, start=0):
     :return: MarketData object containing stock market data.
     """
     mat = io.loadmat(file_path)
-    train_vol = np.array(mat['train_vol'])[start:, :]  # Volume for each stocks on each day
-    train_op = np.array(mat['train_op'])[start:, :]
-    train_lo = np.array(mat['train_lo'])[start:, :]
-    train_hi = np.array(mat['train_hi'])[start:, :]
-    train_cl = np.array(mat['train_cl'])[start:, :]
+    train_vol = np.array(mat['test_vol'])[start:, :]  # Volume for each stocks on each day
+    train_op = np.array(mat['test_op'])[start:, :]
+    train_lo = np.array(mat['test_lo'])[start:, :]
+    train_hi = np.array(mat['test_hi'])[start:, :]
+    train_cl = np.array(mat['test_cl'])[start:, :]
 
-    train_stocks = [name[0] for name in np.array(mat['train_stocks'])[0]]  # Ticker names for all 497 stocks
+    train_stocks = [name[0] for name in np.array(mat['test_stocks'])[0]]  # Ticker names for all 497 stocks
     return market_data.MarketData(train_vol, train_op, train_lo, train_hi, train_cl, train_stocks)
 
 
