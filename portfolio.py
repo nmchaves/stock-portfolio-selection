@@ -15,7 +15,7 @@ class Portfolio(object):
     literature.
     """
 
-    def __init__(self, market_data, start=0, stop=None, rebal_interval=1, tune_interval=None, tune_length=None,
+    def __init__(self, market_data, market_data_train=None, start=0, stop=None, rebal_interval=1, tune_interval=None, tune_length=None,
                  init_b=None, init_dollars=init_dollars, verbose=False, silent=False,
                  past_results_dir=None, new_results_dir=None, repeat_past=False):
         """
@@ -31,6 +31,7 @@ class Portfolio(object):
             raise Exception('market_data input to Portfolio constructor must be a MarketData object.')
 
         self.data = market_data
+        self.data_train = market_data_train
         self.num_stocks = len(self.data.stock_names)
         self.start = start
 
@@ -51,6 +52,7 @@ class Portfolio(object):
         self.dollars_op_history[0] = init_dollars
         self.dollars_cl_history = np.zeros(self.num_days)  # Dollars before close each day
         self.last_close_price = np.NaN * np.ones(self.num_stocks)
+        self.sharpe = None  # Sharpe ratio. Calculate after finished running
         self.verbose = verbose
         self.silent = silent
 
@@ -61,7 +63,7 @@ class Portfolio(object):
             self.past_b_history = past_b_history
             self.past_dollars_history = past_dollars_history
             self.len_past = past_b_history.shape[1]
-            self.b = past_b_history[:, -1]  # Use previous b as initialization (overrieds |init_b| argument)
+            self.b = past_b_history[:, -1]  # Use previous b as initialization (overrides |init_b| argument)
         else:
             self.past_b_history = None
             self.past_dollars_history = None
@@ -184,11 +186,12 @@ class Portfolio(object):
             else:
                 init = False
             self.update(day, init)
+        self.sharpe = empirical_sharpe_ratio(self.dollars_op_history)
 
         self.print_results()
-
         if self.new_results_dir is not None:
             self.save_results()
+
 
     def print_results(self):
         if self.verbose:
@@ -199,7 +202,7 @@ class Portfolio(object):
 
         if not self.silent:
             print 'Sharpe ratio:'
-            print empirical_sharpe_ratio(self.dollars_op_history)
+            print self.sharpe
 
     def save_results(self):
         if self.new_results_dir is None:

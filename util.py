@@ -8,7 +8,7 @@ import market_data
 from constants import cost_per_dollar
 
 
-def load_matlab_sp500_data(file_path):
+def load_matlab_sp500_data(file_path, start=0):
     """
     Get raw stock market data from Matlab file in |file_path|.
     Converts all nan values to 0.
@@ -17,20 +17,13 @@ def load_matlab_sp500_data(file_path):
     :return: MarketData object containing stock market data.
     """
     mat = io.loadmat(file_path)
-    train_vol = np.array(mat['train_vol'])  # Volume for each stocks on each day
-    train_op = np.array(mat['train_op'])
-    train_lo = np.array(mat['train_lo'])
-    train_hi = np.array(mat['train_hi'])
-    train_cl = np.array(mat['train_cl'])
-    """
-    train_vol = np.nan_to_num(np.array(mat['train_vol']))  # Volume for each stocks on each day
-    train_op = np.nan_to_num(np.array(mat['train_op']))
-    train_lo = np.nan_to_num(np.array(mat['train_lo']))
-    train_hi = np.nan_to_num(np.array(mat['train_hi']))
-    train_cl = np.nan_to_num(np.array(mat['train_cl']))
-    """
-    train_stocks = [name[0] for name in np.array(mat['train_stocks'])[0]]  # Ticker names for all 497 stocks
+    train_vol = np.array(mat['train_vol'])[start:, :]  # Volume for each stocks on each day
+    train_op = np.array(mat['train_op'])[start:, :]
+    train_lo = np.array(mat['train_lo'])[start:, :]
+    train_hi = np.array(mat['train_hi'])[start:, :]
+    train_cl = np.array(mat['train_cl'])[start:, :]
 
+    train_stocks = [name[0] for name in np.array(mat['train_stocks'])[0]]  # Ticker names for all 497 stocks
     return market_data.MarketData(train_vol, train_op, train_lo, train_hi, train_cl, train_stocks)
 
 

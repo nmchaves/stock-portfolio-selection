@@ -78,9 +78,8 @@ class ExpertPool(Portfolio):
         super(ExpertPool, self).update_allocation(cur_day=cur_day, init=init)
         return
 
-
     def get_new_allocation(self, cur_day, init=False):
-        if cur_day < 3:
+        if self.data_train is None and cur_day < 3:
             # Use uniform weights for all experts, since we have limited info
             # (Need at least 3 days of history to define sharpe ratio)
             weights = (1.0 / self.num_experts) * np.ones(self.num_experts)

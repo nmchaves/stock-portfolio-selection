@@ -8,13 +8,13 @@ class UniformConstantRebalancedPortfolio(Portfolio):
 
         UCRP serves as a very simple baseline.
     """
-    def __init__(self, market_data, start=0, stop=None, rebal_interval=1, tune_interval=None,
+    def __init__(self, market_data, market_data_train=None, start=0, stop=None, rebal_interval=1, tune_interval=None,
                  init_b=None, verbose=False, silent=False, past_results_dir=None,
                  new_results_dir=None, repeat_past=False):
         self.portfolio_type = 'UCRP'
 
         super(UniformConstantRebalancedPortfolio, self).__init__(
-                                market_data=market_data, start=start, stop=stop, rebal_interval=rebal_interval,
+                                market_data=market_data, market_data_train=market_data_train, start=start, stop=stop, rebal_interval=rebal_interval,
                                 init_b=init_b, tune_interval=tune_interval, verbose=verbose, silent=silent,
                                 past_results_dir=past_results_dir, new_results_dir=new_results_dir, repeat_past=repeat_past)
 
