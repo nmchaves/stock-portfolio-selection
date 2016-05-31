@@ -16,9 +16,9 @@ class RMR(OLMAR):
     http://www.ijcai.org/Proceedings/13/Papers/296.pdf
 
     """
-    def __init__(self, market_data, market_data_train=None, start=0, stop=None, window=20, eps=1.3, tau=0.01, max_iter=100,
-                rebal_interval=1, window_range=range(14, 26, 2), eps_range=[1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5],
-                 tune_interval=None, init_b=None, verbose=False, silent=False,
+    def __init__(self, market_data, market_data_train=None, start=0, stop=None, window=20, eps=1.5, tau=0.001, max_iter=100,
+                rebal_interval=1, window_range=range(5, 30, 3), eps_range=np.arange(1.1, 5.1, 0.2),
+                 tune_interval=25, init_b=None, verbose=False, silent=False,
                  past_results_dir=None, new_results_dir=None, repeat_past=False):
 
         self.portfolio_type = 'RMR'
@@ -99,12 +99,7 @@ class RMR(OLMAR):
             mu_avail_full_window = self.T_func(mu_avail_full_window, window_pr_avail_full_window)
             L1_dist = np.linalg.norm((prev_mu-mu_avail_full_window), ord=1)
             thresh = self.tau * np.linalg.norm(mu_avail_full_window, ord=1)
-            """
-            prev_mu = mu
-            mu = self.T_func(mu, window_pr_avail_today)
-            L1_dist = np.linalg.norm((prev_mu-mu), ord=1)
-            thresh = self.tau * np.linalg.norm(mu, ord=1)
-            """
+
             if L1_dist <= thresh:
                 break
 
@@ -156,22 +151,13 @@ class RMR(OLMAR):
 
         T_tilde = s2 * 1.0 / s1
         return T_tilde
-        """
-        gamma = np.linalg.norm(R_tilde, ord=2)
-        gamma_inv = 1.0 / gamma
-
-        return T_bar + min(1.0, gamma_inv) * mu
-        """
-
 
     def tune_hyperparams(self, cur_day):
         # Create new instances of this portfolio with various hyperparameter settings
         # to find the best constant hyperparameters in hindsight
 
-        # TODO: use previous history, if available
-
-        tune_duration = 20
-        if cur_day >= tune_duration:
+        tune_duration = 10  # Tune over the last 2 weeks
+        if cur_day > tune_duration:
             start_day = cur_day - tune_duration
         else:
             # Not worth tuning yet
@@ -180,8 +166,7 @@ class RMR(OLMAR):
         hyperparam_space = [self.window_range, self.eps_range]
         hyp_combos = list(itertools.product(*hyperparam_space))
 
-        #init_b = self.b_history[-tune_duration]  # Allocation used at beginning of tuning period
-        init_b = None
+        init_b = self.b_history[:,cur_day-tune_duration]   # Allocation used at beginning of tuning period
 
         # Compute sharpe ratios for each setting of hyperparams
         sharpe_ratios = []

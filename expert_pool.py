@@ -23,7 +23,7 @@ class ExpertPool(Portfolio):
     def __init__(self, market_data, experts, start=0, stop=None, init_weights=None,
                  rebal_interval=1, tune_interval=None,
                  init_b=None, init_dollars=init_dollars,
-                 weighting_strategy='exp_window', windows=[10], ew_alpha=0.5, ew_eta=0.1,
+                 weighting_strategy='exp_window', windows=[10], ew_alpha=0.5, ew_eta=0.8,
                  verbose=False, silent=False, past_results_dir=None, new_results_dir=None, repeat_past=False):
 
         if not isinstance(market_data, MarketData):
