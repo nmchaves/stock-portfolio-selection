@@ -48,16 +48,16 @@ class NonParametricMarkowitz(Portfolio):
             cl = self.data.get_cl()[day-window+1:day,available_inds]
         elif(self.data_train is not None):
             op = self.data_train.get_op()[day-window+1:, available_inds]
-            op = np.concatenate((op,self.data.get_op()[:day+1,available_inds]),axis=1)
+            op = np.concatenate((op,self.data.get_op()[:day+1,available_inds]))
 
             hi = self.data_train.get_hi()[day-window+1:, available_inds]
-            hi = np.concatenate((hi,self.data.get_hi()[:day,available_inds]),axis=1)
+            hi = np.concatenate((hi,self.data.get_hi()[:day,available_inds]))
 
             lo = self.data_train.get_lo()[day-window+1:, available_inds]
-            lo = np.concatenate((lo,self.data.get_lo()[:day,available_inds]),axis=1)
+            lo = np.concatenate((lo,self.data.get_lo()[:day,available_inds]))
 
             cl = self.data_train.get_cl()[day-window+1:, available_inds]
-            cl = np.concatenate((cl,self.data.get_cl()[:day,available_inds]),axis=1)
+            cl = np.concatenate((cl,self.data.get_cl()[:day,available_inds]))
 
         else:
             raise 'NPM called get_market_window with day<window'
@@ -85,6 +85,7 @@ class NonParametricMarkowitz(Portfolio):
             num_available = np.sum(available)
             new_allocation = 1.0/num_available * np.asarray(available)
         else:
+
             k = self.k
             available = util.get_avail_stocks(self.data.get_op()[cur_day - self.window_len + 1, :])
             available_inds = util.get_available_inds(available)
@@ -192,8 +193,3 @@ class NonParametricMarkowitz(Portfolio):
         print 30 * '-'
         Portfolio.print_results(self)
 
-    def save_results(self):
-        output_fname = 'results/nonparametric_markowitz_w' + str(self.window_len) + '_k' + str(self.k) + '_e' + self.risk_aversion + '_s' + str(self.start_date) +  '.txt'
-        print 'Saving dollar value to file: ', output_fname
-        output_file = open(output_fname, 'w')
-        output_file.write('\t'.join(map(str, self.dollars_history)))

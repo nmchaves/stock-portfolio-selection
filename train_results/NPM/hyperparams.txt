@@ -1,0 +1,6 @@
+# NPM hyperparameters selected by online tuning on each day of the training set.
+# Param	Final_Value
+Window	10
+Start_Date	25
+K	10
+Risk	1e-05
