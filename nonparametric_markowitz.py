@@ -1,5 +1,5 @@
 import numpy as np
-
+from constants import init_dollars
 import util
 from portfolio import Portfolio
 
@@ -8,7 +8,10 @@ from cvxpy import *
 import pdb
 
 class NonParametricMarkowitz(Portfolio):
-    def __init__(self, market_data, window_len, k, risk_aversion, start_date, portfolio_cap = 1.0):
+    def __init__(self, market_data, market_data_train=None, window_len=10, k=10, risk_aversion=1e-5, start_date=25, start=0, stop=None, 
+                 rebal_interval=1, tune_interval=None, tune_length=None,
+                 init_b=None, init_dollars=init_dollars, verbose=False, silent=False,
+                 past_results_dir=None, new_results_dir=None, repeat_past=False):
         self.portfolio_type = 'NPM'
         self.window_len = window_len
         self.k = k
@@ -16,11 +19,23 @@ class NonParametricMarkowitz(Portfolio):
         self.start_date = start_date
         self.mu = None 
         self.sigma = None
-	self.predicted_return = None
-        self.ma_window = 15
-	#self.cap = portfolio_cap
-	#self.filt = np.asarray([-0.0902,0.1282,-0.1313,0.1531,-0.1554,0.2239,-0.1965,0.1735,-0.1749,0.0556,0.0618,-0.1465,0.2183,-0.2497,1.1316])
-        super(NonParametricMarkowitz,self).__init__(market_data)
+        self.startup_time = 10
+
+        pdb.set_trace()
+
+        if past_results_dir is not None:
+            hyperparams_dict = util.load_hyperparams(past_results_dir, ['Window', 'K', 'Risk', 'Start_Date'])
+            self.window_len = int(hyperparams_dict['Window'])
+            self.k = int(hyperparams_dict['K'])
+            self.risk_aversion = hyperparams_dict['Risk']
+            self.start_date = hyperparams_dict['Start_Date']
+            self.load_state(past_results_dir)
+
+        super(NonParametricMarkowitz,self).__init__(market_data, start=start, stop=stop, 
+                    rebal_interval=rebal_interval, tune_interval=tune_interval, tune_length=tune_length, 
+                    init_b=None, init_dollars=init_dollars, verbose=False, silent=False, past_results_dir=past_results_dir, 
+                    new_results_dir=new_results_dir, repeat_past=repeat_past)
+        
 
     def get_market_window(self, window, day):
         # Compose historical market window, including opening prices
@@ -55,6 +70,8 @@ class NonParametricMarkowitz(Portfolio):
             num_available = np.sum(available)
             new_allocation = 1.0/num_available * np.asarray(available)
         else:
+            pdb.set_trace()
+
             k = self.k
             available = util.get_avail_stocks(self.data.get_op()[cur_day - self.window_len + 1, :])
             available_inds = util.get_available_inds(available)
@@ -105,7 +122,7 @@ class NonParametricMarkowitz(Portfolio):
         
         
         # Get the previous day's closing data
-        last_close = self.data.get_cl()[cur_day-1,:]
+        last_close = np.nan_to_num(self.data.get_cl()[cur_day-1,:])
         num_total_stocks = last_close.shape[0]
         num_examples = cur_day-1
 
@@ -119,33 +136,42 @@ class NonParametricMarkowitz(Portfolio):
             N = num_examples-1
             mu_N = self.mu
             self.mu = N/(N+1.0) * self.mu + 1/(N+1.0) * last_close
-	    '''
-	    # Use a simple moving average filter to estimate today's closing price
-            if(cur_day > self.ma_window):
-                window = np.arange(cur_day-self.ma_window, cur_day)
-                self.predicted_return = 1.0/self.ma_window * np.sum(self.data.get_cl()[window,:], axis=0)
-	    '''
-	    # Try predictive filtering
-	    #if(cur_day > self.ma_window):
-            #    window = np.arange(cur_day-self.ma_window, cur_day)
-	#	pdb.set_trace()
-	#	self.predicted_return = self.data.get_cl()[window,:] * self.filt
-
-	    # During initialization, estimate cov as diagonal; oth., estimate full cov.
+	    
             if(cur_day >= self.start_date):   
                 self.sigma = N/(N+1.0) * (self.sigma+np.outer(mu_N, mu_N)) - np.outer(self.mu, self.mu) + 1/(N+1.0)*np.outer(last_close, last_close)
             else:
                 self.sigma = N/(N+1.0) * (self.sigma + np.diag(mu_N**2)) - np.diag(self.mu**2) + 1/(N+1.0)*np.diag(last_close**2)
+    
+    def get_hyperparams_dict(self):
+        hyperparams = {
+            'Window': str(self.window_len),
+            'K': str(self.k),
+            'Risk': str(self.risk_aversion),
+            'Start_Date' : str(self.start_date),
+        }
+        return hyperparams
 
- #    def run(self):
- #        for day in range(0, self.num_days):
- #            if(day % 100 == 0):
- #                print 'Day' + str(day)
- #            self.update_statistics(day)
- #            self.update(day)
-	# pdb.set_trace()
- #        self.print_results()
- #        #self.save_results()
+    def save_results(self):
+        if self.new_results_dir is None:
+            return
+
+        print 'Saving ', self.portfolio_type
+        save_dir = self.new_results_dir
+
+        util.save_dollars_history(save_dir=save_dir, dollars=self.dollars_op_history, portfolio_type=self.portfolio_type)
+        util.save_b_history(save_dir=save_dir, b_history=self.b_history, portfolio_type=self.portfolio_type)
+        util.save_hyperparams(save_dir=save_dir, hyperparams_dict=self.get_hyperparams_dict(), portfolio_type=self.portfolio_type)
+        self.save_state(save_dir=save_dir)
+        return
+
+    def save_state(self, save_dir):
+        np.save(save_dir + 'mu.npy', self.mu)
+        np.save(save_dir + 'sigma.npy', self.sigma)
+
+    def load_state(self, load_dir):
+        self.mu = np.load(load_dir + 'mu.npy')
+        self.sigma = np.load(load_dir + 'mu.npy')
+
 
     def print_results(self):
         print 30 * '-'
