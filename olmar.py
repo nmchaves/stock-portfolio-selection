@@ -13,10 +13,11 @@ class OLMAR(Portfolio):
     Online Moving Average Reversion (OLMAR) Portfolio
 
     Introduced by Li and Hoi. "On-Line Portfolio Selection with Moving Average Reversion"
+    http://icml.cc/2012/papers/168.pdf
 
     """
-    def __init__(self, market_data, market_data_train=None, start=0, stop=None, window=20, eps=1.1, rebal_interval=1,
-                 window_range=range(16, 26, 2), eps_range=[1.1, 1.2, 1.3, 1.4, 1.5], tune_interval=None,
+    def __init__(self, market_data, market_data_train=None, start=0, stop=None, window=10, eps=1.3, rebal_interval=1,
+                 window_range=range(5, 30, 3), eps_range=np.arange(1.1, 5.1, 0.2), tune_interval=15,
                  init_b=None, verbose=False, silent=False, past_results_dir=None, new_results_dir=None, repeat_past=False):
         """
 
@@ -138,7 +139,6 @@ class OLMAR(Portfolio):
 
         # limit lambda to avoid numerical problems from acting too aggressively.
         # (referenced from marigold's implementation: https://github.com/Marigold/universal-portfolios)
-        # TODO: check if this is necessary
         lam = min(100000, lam)
 
         # Note: we don't perform simplex project b/c negative values (shorting) is allowed.
@@ -156,8 +156,8 @@ class OLMAR(Portfolio):
         # Create new instances of this portfolio with various hyperparameter settings
         # to find the best constant hyperparameters in hindsight
 
-        tune_duration = 20
-        if cur_day >= tune_duration:
+        tune_duration = 10  # Tune over the last 2 weeks
+        if cur_day > tune_duration:
             start_day = cur_day - tune_duration
         else:
             # Not worth tuning yet
@@ -166,8 +166,7 @@ class OLMAR(Portfolio):
         hyperparam_space = [self.window_range, self.eps_range]
         hyp_combos = list(itertools.product(*hyperparam_space))
 
-        #init_b = self.b_history[-tune_duration]  # Allocation used at beginning of tuning period
-        init_b = None
+        init_b = self.b_history[:,cur_day-tune_duration]   # Allocation used at beginning of tuning period
 
         # Compute sharpe ratios for each setting of hyperparams
         sharpe_ratios = []

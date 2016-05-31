@@ -85,7 +85,7 @@ class Portfolio(object):
 
         # Check if we need to tune hyperparameters today
         if self.tune_interval and not self.repeat_past:
-            if cur_day > self.start and cur_day % self.tune_interval == 0:
+            if cur_day > self.start and cur_day % self.tune_interval == 1:
                 self.tune_hyperparams(cur_day)
 
         self.update_allocation(cur_day, init)
