@@ -15,7 +15,7 @@ class OLMAR(Portfolio):
     Introduced by Li and Hoi. "On-Line Portfolio Selection with Moving Average Reversion"
 
     """
-    def __init__(self, market_data, start=0, stop=None, window=20, eps=1.1, rebal_interval=1,
+    def __init__(self, market_data, market_data_train=None, start=0, stop=None, window=20, eps=1.1, rebal_interval=1,
                  window_range=range(16, 26, 2), eps_range=[1.1, 1.2, 1.3, 1.4, 1.5], tune_interval=None,
                  init_b=None, verbose=False, silent=False, past_results_dir=None, new_results_dir=None, repeat_past=False):
         """
@@ -47,9 +47,29 @@ class OLMAR(Portfolio):
         self.eps_range = eps_range
         self.new_results_dir = new_results_dir
 
-        super(OLMAR, self).__init__(market_data=market_data, start=start, stop=stop, rebal_interval=rebal_interval,
+        super(OLMAR, self).__init__(market_data=market_data, market_data_train=market_data_train, start=start, stop=stop, rebal_interval=rebal_interval,
                                     init_b=init_b, tune_interval=tune_interval, verbose=verbose, silent=silent,
                                     past_results_dir=past_results_dir, new_results_dir=new_results_dir, repeat_past=repeat_past)
+
+    def get_window_prices(self, day, window):
+
+        today_op = self.data.get_op(relative=False)[day, :]
+        if self.data_train is None or day >= window:
+            if day < window:
+                # Full window not available
+                window = day
+            window_cl = self.data.get_cl(relative=False)[day-window:day, :]
+        else:
+            # Use the training data to obtain part of the window
+            window_start = day - window  # Note: window_start is negative
+            window_stop = day
+            if window_stop == 0:
+                window_cl = self.data_train.get_cl(relative=False)[window_start:, :]
+            else:
+                window_cl_past = self.data_train.get_cl(relative=False)[window_start:, :]
+                window_cl_cur = self.data.get_cl(relative=False)[0:day, :]
+                window_cl = np.concatenate((window_cl_past, window_cl_cur), axis=0)
+        return window, window_cl, today_op
 
     def predict_price_relatives(self, day):
         """
@@ -66,19 +86,13 @@ class OLMAR(Portfolio):
         (This plays the role of t+1 in the above equation.)
         :return: The predicted price relatives vector.
         """
-        window = self.window
-        if day <= window:
-            # Full window is not available
-            window = day
 
-        window_cl = self.data.get_cl(relative=False)[day-window:day, :]
-        today_op = self.data.get_op(relative=False)[day, :]
-        today_op = np.reshape(today_op, newshape=(1, self.num_stocks))
-        window_prices = np.append(window_cl, today_op, axis=0)
+        window, window_cl, today_op = self.get_window_prices(day, self.window)
+        window_prices = np.concatenate((window_cl, today_op.reshape(1, -1)), axis=0)
         avg_prices = np.mean(window_prices, axis=0)  # Mean of each stock in the window
 
         price_rel = util.silent_divide(avg_prices, today_op)  # Predicted price relatives
-        return price_rel[0]
+        return price_rel
 
     def compute_lambda(self, ppr_avail, mean_ppr, avail_idxs):
         num_avail_stocks = len(ppr_avail)
@@ -103,7 +117,9 @@ class OLMAR(Portfolio):
         :param init: If True, this portfolio is being initialized today.
         :return:
         """
-        if init:
+        ""
+        if init and self.data_train is None:
+            # Use uniform allocation
             cur_day_op = self.data.get_op(relative=False)[day, :]  # opening prices on |cur_day|
             return util.get_uniform_allocation(self.num_stocks, cur_day_op)
 

@@ -49,13 +49,7 @@ class RMR(OLMAR):
         :return: The predicted price relatives vector.
         """
 
-        window = self.window
-        if day <= window:
-            # Full window is not available
-            window = day
-
-        window_cl = self.data.get_cl(relative=False)[day-window:day, :]
-        today_op = self.data.get_op(relative=False)[day, :]
+        window, window_cl, today_op = self.get_window_prices(day, self.window)
         avail_today = util.get_avail_stocks(today_op)
         num_avail = sum(avail_today)
         today_op = np.reshape(today_op, newshape=(1, self.num_stocks))
