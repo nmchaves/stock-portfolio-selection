@@ -62,7 +62,7 @@ class Portfolio(object):
             past_b_history, past_dollars_history = self.load_previous_results(past_results_dir)
             self.past_b_history = past_b_history
             self.past_dollars_history = past_dollars_history
-            self.len_past = past_b_history.shape[1]
+            self.len_past = past_b_history.shape[1] - 1
             self.b = past_b_history[:, -1]  # Use previous b as initialization (overrides |init_b| argument)
         else:
             self.past_b_history = None
@@ -212,7 +212,8 @@ class Portfolio(object):
         save_dir = self.new_results_dir
 
         util.save_dollars_history(save_dir=save_dir, dollars=self.dollars_op_history, portfolio_type=self.portfolio_type)
-        util.save_b_history(save_dir=save_dir, b_history=self.b_history, portfolio_type=self.portfolio_type)
+        full_b = np.concatenate((self.b_history, self.b.reshape(-1, 1)), axis=1)
+        util.save_b_history(save_dir=save_dir, b_history=full_b, portfolio_type=self.portfolio_type)
         util.save_hyperparams(save_dir=save_dir, hyperparams_dict=self.get_hyperparams_dict(), portfolio_type=self.portfolio_type)
         return
 
