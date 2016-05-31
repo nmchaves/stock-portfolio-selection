@@ -1,0 +1,4 @@
+# OLMAR hyperparameters selected by online tuning on each day of the training set.
+# Param	Final_Value
+Epsilon	1.1
+Window	20
