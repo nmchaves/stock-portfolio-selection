@@ -47,6 +47,8 @@ class ExpertPool(Portfolio):
         self.weighting_strategy = weighting_strategy
         if weighting_strategy == 'exp_window' or weighting_strategy == 'ma_perf':
             self.windows = windows
+        num_days = market_data.get_cl().shape[0]
+        self.weights_history = np.zeros(shape=(num_days, self.num_experts))
 
         # TODO: Check if past history was passed and load in hyperparams (see init of RMR and OLMAR for examples)
         # Note that this is only if we want to actually saw alpha and eta from training, which may be a good idea
@@ -92,6 +94,7 @@ class ExpertPool(Portfolio):
                 weights = self.recent_sharpe_weighting(cur_day)
 
         net_b = self.aggregate_experts(weights)
+        self.weights_history[cur_day, :] = weights
         return net_b
 
     def open_price_weighting(self, cur_day):
